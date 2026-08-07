@@ -1,0 +1,64 @@
+:root{
+
+    /* ===========================
+       BRAND COLORS
+    =========================== */
+
+    --primary:#4F7CFF;
+    --primary-hover:#3B6EF5;
+
+    --cyan:#22D3EE;
+    --purple:#8B5CF6;
+
+    --success:#22C55E;
+    --warning:#F59E0B;
+    --danger:#EF4444;
+
+    /* ===========================
+       BACKGROUND
+    =========================== */
+
+    --bg:#050816;
+    --surface:#0C1220;
+    --surface-light:#10192B;
+
+    --glass:rgba(255,255,255,.05);
+
+    --border:rgba(255,255,255,.08);
+
+    /* ===========================
+       TYPOGRAPHY
+    =========================== */
+
+    --text:#FFFFFF;
+
+    --text-soft:#E2E8F0;
+
+    --text-muted:#94A3B8;
+
+    --text-disabled:#64748B;
+
+    /* ===========================
+       SHADOWS
+    =========================== */
+
+    --shadow-sm:
+        0 8px 30px rgba(0,0,0,.20);
+
+    --shadow-lg:
+        0 25px 80px rgba(0,0,0,.45);
+
+    --shadow-glow:
+        0 0 80px rgba(79,124,255,.20);
+
+    /* ===========================
+       RADIUS
+    =========================== */
+
+    --radius-sm:14px;
+
+    --radius:22px;
+
+    --radius-lg:34px;
+
+}

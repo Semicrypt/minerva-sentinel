@@ -1,0 +1,313 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+@import "tailwindcss";
+
+@import "./styles/theme.css";
+
+@import "./styles/typography.css";
+
+html {
+
+    scroll-behavior: smooth;
+
+}
+
+/* ==========================================================
+   MIVERVA DESIGN SYSTEM v1
+========================================================== */
+
+:root{
+
+    /* Background */
+
+    --bg:#050816;
+
+    --surface:#0C1220;
+
+    --surface-light:#111827;
+
+    --glass:rgba(17,24,39,.55);
+
+    /* Borders */
+
+    --border:rgba(255,255,255,.06);
+
+    --border-hover:rgba(79,124,255,.30);
+
+    /* Text */
+
+    --text:#F8FAFC;
+
+    --text-secondary:#CBD5E1;
+
+    --text-muted:#64748B;
+
+    /* Brand */
+
+    --primary:#4F7CFF;
+
+    --cyan:#22D3EE;
+
+    --purple:#8B5CF6;
+
+    /* Status */
+
+    --success:#10B981;
+
+    --danger:#F43F5E;
+
+    --warning:#F59E0B;
+
+    /* Radius */
+
+    --radius-sm:12px;
+
+    --radius:18px;
+
+    --radius-lg:28px;
+
+    /* Shadows */
+
+    --shadow-soft:
+    0 20px 60px rgba(0,0,0,.35);
+
+    --shadow-glow:
+    0 0 60px rgba(79,124,255,.25);
+
+}
+
+/* ==========================================================
+   RESET
+========================================================== */
+
+*{
+
+    margin:0;
+
+    padding:0;
+
+    box-sizing:border-box;
+
+}
+
+html{
+
+    scroll-behavior:smooth;
+
+}
+
+body{
+
+    font-family:"Inter",sans-serif;
+
+    color:var(--text);
+
+    min-height:100vh;
+
+    overflow-x:hidden;
+
+    background:
+
+        radial-gradient(circle at 10% 10%,rgba(79,124,255,.18),transparent 30%),
+
+        radial-gradient(circle at 90% 15%,rgba(34,211,238,.12),transparent 28%),
+
+        radial-gradient(circle at 80% 90%,rgba(139,92,246,.15),transparent 35%),
+
+        var(--bg);
+
+}
+
+/* ==========================================================
+   AURORA
+========================================================== */
+
+body::before{
+
+    content:"";
+
+    position:fixed;
+
+    inset:-30%;
+
+    background:
+
+        radial-gradient(circle,rgba(79,124,255,.15),transparent 55%),
+
+        radial-gradient(circle,rgba(34,211,238,.12),transparent 60%),
+
+        radial-gradient(circle,rgba(139,92,246,.12),transparent 65%);
+
+    filter:blur(120px);
+
+    animation:aurora 45s linear infinite;
+
+    z-index:-3;
+
+}
+
+@keyframes aurora{
+
+    0%{
+
+        transform:translate(0,0);
+
+    }
+
+    25%{
+
+        transform:translate(-5%,8%);
+
+    }
+
+    50%{
+
+        transform:translate(6%,10%);
+
+    }
+
+    75%{
+
+        transform:translate(8%,-6%);
+
+    }
+
+    100%{
+
+        transform:translate(0,0);
+
+    }
+
+}
+
+/* ==========================================================
+   GRID
+========================================================== */
+
+body::after{
+
+    content:"";
+
+    position:fixed;
+
+    inset:0;
+
+    background-image:
+
+        linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),
+
+        linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+
+    background-size:70px 70px;
+
+    mask-image:
+
+        radial-gradient(circle at center,black 30%,transparent 90%);
+
+    pointer-events:none;
+
+    z-index:-2;
+
+}
+
+/* ==========================================================
+   TYPOGRAPHY
+========================================================== */
+
+h1,h2,h3,h4{
+
+    font-family:"Sora",sans-serif;
+
+    letter-spacing:-.03em;
+
+}
+
+.metric{
+
+    font-family:"Space Grotesk",sans-serif;
+
+}
+
+/* ==========================================================
+   GLASS
+========================================================== */
+
+.glass{
+
+    background:var(--glass);
+
+    backdrop-filter:blur(20px);
+
+    border:1px solid var(--border);
+
+    box-shadow:var(--shadow-soft);
+
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+button{
+
+    transition:
+
+        transform .25s,
+
+        box-shadow .25s,
+
+        background .25s;
+
+}
+
+button:hover{
+
+    transform:translateY(-2px);
+
+}
+
+/* ==========================================================
+   LINKS
+========================================================== */
+
+a{
+
+    text-decoration:none;
+
+}
+
+/* ==========================================================
+   SCROLLBAR
+========================================================== */
+
+::-webkit-scrollbar{
+
+    width:10px;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+    background:#334155;
+
+    border-radius:50px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+    background:#4F7CFF;
+
+}
+
+/* ==========================================================
+   SELECTION
+========================================================== */
+
+::selection{
+
+    background:#4F7CFF;
+
+    color:white;
+
+}

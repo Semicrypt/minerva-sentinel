@@ -1,0 +1,23 @@
+{
+  "name": "miverna-sentinel-agent",
+  "version": "1.0.0",
+  "description": "Monitoring agent for Miverna Sentinel",
+  "main": "src/agent.js",
+  "scripts": {
+    "start": "node src/agent.js",
+    "dev": "node --watch src/agent.js"
+  },
+  "keywords": [
+    "monitoring",
+    "agent",
+    "cloud",
+    "miverna"
+  ],
+  "author": "Ifeanyi",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.2",
+    "systeminformation": "^5.27.11"
+  }
+}

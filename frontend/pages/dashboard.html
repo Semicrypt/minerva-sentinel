@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hybrid Cloud Monitor</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/main.css">
+
+    <link rel="stylesheet" href="../css/dashboard.css">
+
+</head>
+
+<body>
+
+<div class="background-glow glow-1"></div>
+<div class="background-glow glow-2"></div>
+
+<div class="dashboard-container">
+
+    <aside class="sidebar">
+
+        <div>
+
+            <h1 class="logo">
+                ☁ Hybrid Cloud
+            </h1>
+
+            <p class="logo-subtitle">
+                Monitoring Platform
+            </p>
+
+        </div>
+
+        <nav>
+
+            <a class="active">
+                🏠 Dashboard
+            </a>
+
+            <a href="incidents.html">
+                🚨 Incidents
+            </a>
+
+            <a href="#">
+                📊 Reports
+            </a>
+
+            <a href="#">
+                ⚙ Settings
+            </a>
+
+        </nav>
+
+        <button id="logoutBtn" class="logout-btn">
+            Logout
+        </button>
+
+    </aside>
+
+    <main class="content">
+
+        <header class="header">
+
+            <div>
+
+                <h1>
+                    Dashboard
+                </h1>
+
+                <p>
+                    Monitor all your cloud services in one place.
+                </p>
+
+            </div>
+
+            <button id="addServiceBtn" class="primary-btn">
+                + Add Service
+            </button>
+
+        </header>
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    📦
+                </div>
+
+                <div>
+
+                    <p>Total Services</p>
+
+                    <h2 id="totalServices">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🟢
+                </div>
+
+                <div>
+
+                    <p>Online</p>
+
+                    <h2 id="onlineServices">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🔴
+                </div>
+
+                <div>
+
+                    <p>Offline</p>
+
+                    <h2 id="offlineServices">
+                        0
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    ⚡
+                </div>
+
+                <div>
+
+                    <p>Average Response</p>
+
+                    <h2 id="avgResponse">
+                        0 ms
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="services-section">
+
+            <div class="section-header">
+
+                <h2>
+                    Services
+                </h2>
+
+                <span id="serviceCount">
+                    Live Monitoring
+                </span>
+
+            </div>
+
+            <div id="serviceList">
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<div id="serviceModal" class="modal hidden">
+
+    <div class="modal-content">
+
+        <h2>Add New Service</h2>
+
+        <input
+            id="serviceName"
+            placeholder="Service Name">
+
+        <input
+            id="serviceUrl"
+            placeholder="https://example.com">
+
+        <select id="serviceType">
+
+            <option value="website">
+                Website
+            </option>
+
+            <option value="api">
+                API
+            </option>
+
+        </select>
+
+        <input
+            id="checkInterval"
+            type="number"
+            value="60">
+
+        <div class="modal-buttons">
+
+            <button
+                id="cancelBtn"
+                class="secondary-btn">
+
+                Cancel
+
+            </button>
+
+            <button
+                id="saveBtn"
+                class="primary-btn">
+
+                Save Service
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+<script src="../js/api.js"></script>
+
+<script src="../js/dashboard.js"></script>
+
+</body>
+
+</html>

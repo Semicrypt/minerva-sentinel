@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Incidents</title>
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+rel="stylesheet">
+
+<link rel="stylesheet"
+href="../css/dashboard.css">
+
+<link rel="stylesheet"
+href="../css/incidents.css">
+
+</head>
+
+<body>
+
+<div class="layout">
+
+<aside class="sidebar">
+
+<h2>Hybrid Cloud</h2>
+
+<nav>
+
+<a href="dashboard.html">
+
+🏠 Dashboard
+
+</a>
+
+<a href="#">
+
+🌐 Services
+
+</a>
+
+<a class="active">
+
+🚨 Incidents
+
+</a>
+
+<a href="#">
+
+📊 Reports
+
+</a>
+
+<a href="#">
+
+⚙️ Settings
+
+</a>
+
+</nav>
+
+<button id="logoutBtn">
+
+Logout
+
+</button>
+
+</aside>
+
+<main>
+
+<header class="topbar">
+
+<h1>Incident History</h1>
+
+</header>
+
+<div class="table-header">
+
+<div>Service</div>
+
+<div>Incident</div>
+
+<div>Status</div>
+
+<div>Created</div>
+
+<div>Resolved</div>
+
+</div>
+
+<div id="incidentList">
+
+</div>
+
+</main>
+
+</div>
+
+<script src="../js/api.js"></script>
+
+<script src="../js/incidents.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Service Details</title>
+
+<link rel="preconnect"
+href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+href="https://fonts.gstatic.com"
+crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+rel="stylesheet">
+
+<link rel="stylesheet"
+href="../css/dashboard.css">
+
+<link rel="stylesheet"
+href="../css/service-details.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<div class="layout">
+
+<aside class="sidebar">
+
+<h2>Hybrid Cloud</h2>
+
+<nav>
+
+<a href="dashboard.html">
+
+🏠 Dashboard
+
+</a>
+
+<a class="active">
+
+📈 Analytics
+
+</a>
+
+<a href="incidents.html">
+
+🚨 Incidents
+
+</a>
+
+</nav>
+
+<button id="logoutBtn">
+
+Logout
+
+</button>
+
+</aside>
+
+<main>
+
+<header class="topbar">
+
+<h1 id="serviceTitle">
+
+Loading...
+
+</h1>
+
+<a href="dashboard.html">
+
+← Dashboard
+
+</a>
+
+</header>
+
+<div class="cards">
+
+<div class="card">
+
+<span>Status</span>
+
+<h2 id="statusCard">
+
+--</h2>
+
+</div>
+
+<div class="card">
+
+<span>Type</span>
+
+<h2 id="typeCard">
+
+--</h2>
+
+</div>
+
+<div class="card">
+
+<span>Interval</span>
+
+<h2 id="intervalCard">
+
+--</h2>
+
+</div>
+
+<div class="card">
+
+<span>URL</span>
+
+<p id="urlCard">
+
+--</p>
+
+</div>
+
+</div>
+
+<section class="chart-section">
+
+<h2>
+
+Response Time
+
+</h2>
+
+<canvas id="responseChart">
+
+</canvas>
+
+</section>
+
+<section>
+
+<h2>
+
+Recent Checks
+
+</h2>
+
+<div class="history-header">
+
+<div>Time</div>
+
+<div>Status</div>
+
+<div>HTTP</div>
+
+<div>Response</div>
+
+</div>
+
+<div id="historyList">
+
+</div>
+
+</section>
+
+</main>
+
+</div>
+
+<script src="../js/api.js"></script>
+
+<script src="../js/service-details.js"></script>
+
+</body>
+
+</html>

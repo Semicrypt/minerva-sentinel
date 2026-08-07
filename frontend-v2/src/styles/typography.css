@@ -1,0 +1,59 @@
+.display{
+
+    font-family:"Sora",sans-serif;
+
+    font-size:clamp(4rem,7vw,6.5rem);
+
+    font-weight:800;
+
+    line-height:1;
+
+    letter-spacing:-0.06em;
+
+}
+
+.heading{
+
+    font-family:"Sora",sans-serif;
+
+    font-size:clamp(2.4rem,4vw,3.6rem);
+
+    font-weight:700;
+
+    line-height:1.1;
+
+}
+
+.subheading{
+
+    font-size:1.25rem;
+
+    color:var(--text-soft);
+
+    line-height:1.9;
+
+}
+
+.caption{
+
+    font-size:.82rem;
+
+    font-weight:600;
+
+    color:var(--cyan);
+
+    text-transform:uppercase;
+
+    letter-spacing:.35em;
+
+}
+
+.metric{
+
+    font-family:"Space Grotesk",sans-serif;
+
+    font-size:2.8rem;
+
+    font-weight:700;
+
+}
