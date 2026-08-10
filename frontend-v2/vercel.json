@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://grande-warranties-generated-sender.trycloudflare.com/api/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://grande-warranties-generated-sender.trycloudflare.com/socket.io/:path*"
+    }
+  ]
+}
