@@ -1,16 +1,8 @@
-import {
-    NavLink,
-    useNavigate
-} from "react-router-dom";
-
+import { NavLink, useNavigate } from "react-router-dom";
 import Logo from "./Logo";
+import { logout } from "../../services/authService";
 
 import {
-    logout
-} from "../../services/authService";
-
-import {
-
     LayoutDashboard,
     Server,
     Globe2,
@@ -26,555 +18,221 @@ import {
     Settings,
     ChevronLeft,
     Circle,
-    LogOut
-
+    LogOut,
+    X
 } from "lucide-react";
 
 const navigation = [
-
     {
-
         section: "Operations",
-
         items: [
-
-            {
-
-                title: "Dashboard",
-
-                path: "/dashboard",
-
-                icon: LayoutDashboard
-
-            },
-
-            {
-
-                title: "Infrastructure",
-
-                path: "/infrastructure",
-
-                icon: Server
-
-            },
-
-            {
-
-                title: "Services",
-
-                path: "/services",
-
-                icon: Globe2
-
-            },
-
-            {
-
-                title: "AWS Resources",
-
-                path: "/aws",
-
-                icon: Cloud
-
-            },
-
-            {
-
-                title: "Containers",
-
-                path: "/containers",
-
-                icon: Box
-
-            },
-
-            {
-
-                title: "Observability",
-
-                path: "/observability",
-
-                icon: Activity
-
-            },
-
-            {
-
-                title: "CI/CD",
-
-                path: "/cicd",
-
-                icon: GitBranch
-
-            }
-
+            { title: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+            { title: "Infrastructure", path: "/infrastructure", icon: Server },
+            { title: "Services", path: "/services", icon: Globe2 },
+            { title: "AWS Resources", path: "/aws", icon: Cloud },
+            { title: "Containers", path: "/containers", icon: Box },
+            { title: "Observability", path: "/observability", icon: Activity },
+            { title: "CI/CD", path: "/cicd", icon: GitBranch }
         ]
-
     },
-
     {
-
         section: "Platform",
-
         items: [
-
-            {
-
-                title: "Alerts",
-
-                path: "/alerts",
-
-                icon: Bell,
-
-                badge: 3
-
-            },
-
-            {
-
-                title: "Logs",
-
-                path: "/logs",
-
-                icon: FileText
-
-            },
-
-            {
-
-                title: "Storage",
-
-                path: "/storage",
-
-                icon: Database
-
-            },
-
-            {
-
-                title: "Security",
-
-                path: "/security",
-
-                icon: ShieldCheck
-
-            },
-
-            {
-
-                title: "Cost Explorer",
-
-                path: "/cost-explorer",
-
-                icon: DollarSign
-
-            },
-
-            {
-
-                title: "Settings",
-
-                path: "/settings",
-
-                icon: Settings
-
-            }
-
+            { title: "Alerts", path: "/alerts", icon: Bell, badge: 3 },
+            { title: "Logs", path: "/logs", icon: FileText },
+            { title: "Storage", path: "/storage", icon: Database },
+            { title: "Security", path: "/security", icon: ShieldCheck },
+            { title: "Cost Explorer", path: "/cost-explorer", icon: DollarSign },
+            { title: "Settings", path: "/settings", icon: Settings }
         ]
-
     }
-
 ];
 
-export default function Sidebar() {
-
-    const navigate =
-        useNavigate();
+export default function Sidebar({ open = false, onClose = () => {} }) {
+    const navigate = useNavigate();
 
     function handleLogout() {
-
         logout();
-
-        navigate(
-            "/login"
-        );
-
+        onClose();
+        navigate("/login");
     }
 
     return (
-
-        <aside
-            className="
-                fixed
-                left-0
-                top-0
-                z-50
-                flex
-                h-screen
-                w-[240px]
-                flex-col
-                border-r
-                border-slate-800
-                bg-[#070D18]
-            "
-        >
-
-            {/* Logo */}
-
-            <div className="border-b border-slate-800 px-8 py-8">
-
-                <Logo />
-
-            </div>
-
-            {/* Navigation */}
-
-            <div className="flex-1 overflow-y-auto px-5 py-6">
-
-                {
-
-                    navigation.map(
-                        group => (
-
-                            <div
-                                key={
-                                    group.section
-                                }
-                                className="mb-8"
-                            >
-
-                                <p
-                                    className="
-                                        mb-4
-                                        px-4
-                                        text-xs
-                                        font-semibold
-                                        uppercase
-                                        tracking-[0.28em]
-                                        text-slate-500
-                                    "
-                                >
-
-                                    {group.section}
-
-                                </p>
-
-                                <nav className="space-y-2">
-
-                                    {
-
-                                        group.items.map(
-                                            item => {
-
-                                                const Icon =
-                                                    item.icon;
-
-                                                return (
-
-                                                    <NavLink
-
-                                                        key={
-                                                            item.path
-                                                        }
-
-                                                        to={
-                                                            item.path
-                                                        }
-
-                                                        className={({
-                                                            isActive
-                                                        }) =>
-
-                                                            `
-                                                            group
-                                                            flex
-                                                            items-center
-                                                            justify-between
-                                                            rounded-2xl
-                                                            px-4
-                                                            py-3.5
-                                                            transition-all
-                                                            duration-300
-
-                                                            ${
-                                                                isActive
-
-                                                                    ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-600/20"
-
-                                                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
-
-                                                            }
-                                                            `
-
-                                                        }
-
-                                                    >
-
-                                                        <div className="flex items-center gap-4">
-
-                                                            <Icon
-                                                                size={20}
-                                                            />
-
-                                                            <span className="font-medium">
-
-                                                                {
-                                                                    item.title
-                                                                }
-
-                                                            </span>
-
-                                                        </div>
-
-                                                        {
-
-                                                            item.badge && (
-
-                                                                <span
-                                                                    className="
-                                                                        flex
-                                                                        h-6
-                                                                        w-6
-                                                                        items-center
-                                                                        justify-center
-                                                                        rounded-full
-                                                                        bg-red-500
-                                                                        text-xs
-                                                                        font-bold
-                                                                        text-white
-                                                                    "
-                                                                >
-
-                                                                    {
-                                                                        item.badge
-                                                                    }
-
-                                                                </span>
-
-                                                            )
-
-                                                        }
-
-                                                    </NavLink>
-
-                                                );
-
-                                            }
-                                        )
-
-                                    }
-
-                                </nav>
-
-                            </div>
-
-                        )
-                    )
-
-                }
-
-            </div>
-
-            {/* Footer */}
-
-            <div className="border-t border-slate-800 p-5">
-
-                {/* Hybrid Cloud Status */}
-
-                <div
-                    className="
-                        rounded-3xl
-                        border
-                        border-slate-700
-                        bg-slate-900/80
-                        p-5
-                    "
-                >
-
-                    <div className="flex items-center justify-between">
-
-                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-
-                            Hybrid Cloud
-
-                        </p>
-
-                        <Circle
-                            size={10}
-                            fill="#22c55e"
-                            className="text-emerald-400"
-                        />
-
-                    </div>
-
-                    <div className="mt-5 space-y-4">
-
-                        <div className="flex items-center justify-between">
-
-                            <span className="text-sm text-slate-400">
-
-                                AWS
-
-                            </span>
-
-                            <span className="font-semibold text-emerald-400">
-
-                                Connected
-
-                            </span>
-
-                        </div>
-
-                        <div className="flex items-center justify-between">
-
-                            <span className="text-sm text-slate-400">
-
-                                Docker
-
-                            </span>
-
-                            <span className="font-semibold text-emerald-400">
-
-                                Online
-
-                            </span>
-
-                        </div>
-
-                        <div className="flex items-center justify-between">
-
-                            <span className="text-sm text-slate-400">
-
-                                CloudWatch
-
-                            </span>
-
-                            <span className="font-semibold text-cyan-400">
-
-                                Active
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <div className="mt-6 border-t border-slate-800 pt-5">
-
-                        <div className="flex items-center justify-between">
-
-                            <span className="text-sm text-slate-400">
-
-                                Platform Health
-
-                            </span>
-
-                            <span className="text-lg font-bold text-white">
-
-                                99.99%
-
-                            </span>
-
-                        </div>
-
-                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
-
-                            <div
-                                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500"
-                                style={{
-                                    width: "99%"
-                                }}
-                            />
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                {/* Logout */}
-
+        <>
+            {open && (
                 <button
+                    type="button"
+                    aria-label="Close navigation menu"
+                    onClick={onClose}
+                    className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden"
+                />
+            )}
 
-                    onClick={
-                        handleLogout
-                    }
-
-                    className="
-                        mt-5
-                        flex
-                        w-full
-                        items-center
-                        justify-center
-                        gap-3
-                        rounded-2xl
-                        border
-                        border-slate-700
-                        px-4
-                        py-3
-                        text-slate-300
-                        transition-all
-                        duration-300
-                        hover:border-red-500
-                        hover:bg-red-500/10
-                        hover:text-red-400
-                    "
-
-                >
-
-                    <LogOut
-                        size={18}
-                    />
-
-                    Logout
-
-                </button>
-
-                {/* Version */}
-
-                <div className="mt-6 flex items-center justify-between">
-
-                    <div>
-
-                        <p className="text-sm font-semibold text-white">
-
-                            Minerva Sentinel
-
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-
-                            Version 2.0.0
-
-                        </p>
-
+            <aside
+                className={`
+                    fixed inset-y-0 left-0 z-50
+                    flex w-72 max-w-[88vw] flex-col
+                    overflow-hidden
+                    border-r border-slate-800
+                    bg-[#070D18]/95
+                    shadow-2xl shadow-black/30
+                    backdrop-blur-xl
+                    transition-transform duration-300
+                    lg:w-64 lg:max-w-none lg:translate-x-0
+                    ${open ? "translate-x-0" : "-translate-x-full"}
+                `}
+            >
+                <div className="flex shrink-0 items-center justify-between border-b border-slate-800 px-5 py-5">
+                    <div className="min-w-0">
+                        <Logo />
                     </div>
 
                     <button
-                        className="
-                            rounded-xl
-                            border
-                            border-slate-700
-                            p-2
-                            text-slate-400
-                            transition
-                            hover:border-cyan-500
-                            hover:text-white
-                        "
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close navigation menu"
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white lg:hidden"
                     >
-
-                        <ChevronLeft
-                            size={16}
-                        />
-
+                        <X size={20} />
                     </button>
-
                 </div>
 
-            </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-4">
+                    {navigation.map((group) => (
+                        <div key={group.section} className="mb-7 last:mb-0">
+                            <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                                {group.section}
+                            </p>
 
-        </aside>
+                            <nav className="space-y-1.5">
+                                {group.items.map((item) => {
+                                    const Icon = item.icon;
 
+                                    return (
+                                        <NavLink
+                                            key={item.path}
+                                            to={item.path}
+                                            end={item.path === "/dashboard"}
+                                            onClick={onClose}
+                                            className={({ isActive }) =>
+                                                `
+                                                group flex items-center justify-between
+                                                rounded-xl px-3 py-2.5
+                                                text-sm font-medium
+                                                transition-all duration-200
+                                                ${
+                                                    isActive
+                                                        ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-600/20"
+                                                        : "text-slate-400 hover:bg-slate-800/80 hover:text-white"
+                                                }
+                                                `
+                                            }
+                                        >
+                                            <span className="flex min-w-0 items-center gap-3">
+                                                <Icon size={18} className="shrink-0" />
+                                                <span className="truncate">{item.title}</span>
+                                            </span>
+
+                                            {item.badge && (
+                                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </NavLink>
+                                    );
+                                })}
+                            </nav>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="shrink-0 border-t border-slate-800 px-3 py-3 sm:p-4">
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                                Hybrid Cloud
+                            </p>
+
+                            <Circle
+                                size={9}
+                                fill="#22c55e"
+                                className="text-emerald-400"
+                            />
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-400">AWS</span>
+                                <span className="font-semibold text-emerald-400">
+                                    Connected
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-400">Docker</span>
+                                <span className="font-semibold text-emerald-400">
+                                    Online
+                                </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-400">CloudWatch</span>
+                                <span className="font-semibold text-cyan-400">
+                                    Active
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 border-t border-slate-800 pt-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-slate-400">
+                                    Platform Health
+                                </span>
+
+                                <span className="font-bold text-white">
+                                    99.99%
+                                </span>
+                            </div>
+
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500"
+                                    style={{ width: "99%" }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 transition hover:border-red-500 hover:bg-red-500/10 hover:text-red-400"
+                    >
+                        <LogOut size={17} />
+                        Logout
+                    </button>
+
+                    <div className="mt-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-semibold text-white">
+                                Minerva Sentinel
+                            </p>
+
+                            <p className="text-[11px] text-slate-500">
+                                Version 2.0.0
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            aria-label="Collapse sidebar"
+                            className="rounded-lg border border-slate-700 p-1.5 text-slate-400 transition hover:border-cyan-500 hover:text-white"
+                        >
+                            <ChevronLeft size={15} />
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </>
     );
-
 }
