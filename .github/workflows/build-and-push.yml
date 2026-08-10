@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - docker-deployment
     paths:
       - "backend/**"
       - "frontend-v2/**"
@@ -27,7 +28,7 @@ jobs:
 
     steps:
       - name: Check out source code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Authenticate to AWS with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
