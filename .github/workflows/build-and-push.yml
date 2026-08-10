@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      - docker-deployment
+      - ci-ecr-pipeline
     paths:
       - "backend/**"
       - "frontend-v2/**"
@@ -29,10 +31,17 @@ jobs:
       - name: Check out source code
         uses: actions/checkout@v7
 
+      - name: Display GitHub identity
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Environment: ${{ github.environment }}"
+
       - name: Authenticate to AWS with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::878451097402:role/MinervaSentinelGitHubActionsRole
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
