@@ -29,6 +29,13 @@ jobs:
     steps:
       - name: Check out source code
         uses: actions/checkout@v7
+        
+      - name: Display GitHub identity
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Environment: ${{ github.environment }}"
 
       - name: Authenticate to AWS with GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
