@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - docker-deployment
+      - ci-ecr-pipeline
     paths:
       - "backend/**"
       - "frontend-v2/**"
@@ -41,7 +42,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::878451097402:role/MinervaSentinelGitHubActionsRole
-          aws-region: eu-north-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -55,8 +56,8 @@ jobs:
           platforms: linux/amd64
           provenance: false
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/minerva-sentinel-backend:latest
-            ${{ steps.login-ecr.outputs.registry }}/minerva-sentinel-backend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v7
@@ -66,5 +67,5 @@ jobs:
           platforms: linux/amd64
           provenance: false
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/minerva-sentinel-frontend:latest
-            ${{ steps.login-ecr.outputs.registry }}/minerva-sentinel-frontend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:latest
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
