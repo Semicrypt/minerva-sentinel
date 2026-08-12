@@ -4,19 +4,40 @@ const {
     require("./docker-snapshot");
 
 const {
-    sendDockerSnapshot
+    getSystemMetrics
+} =
+    require("./system");
+
+const {
+    sendDockerSnapshot,
+    sendHostMetrics
 } =
     require("./sender");
 
 const {
-    DOCKER_SNAPSHOT_URL,
     MINERVA_AGENT_KEY,
+    MINERVA_AGENT_MODE,
+    DOCKER_SNAPSHOT_URL,
+    HOST_METRICS_URL,
     INTERVAL
 } =
     require("./config");
 
-let stopping = false;
-let nextCycleTimer = null;
+let stopping =
+    false;
+
+let nextCycleTimer =
+    null;
+
+/*
+|--------------------------------------------------------------------------
+| Schedule Next Cycle
+|--------------------------------------------------------------------------
+|
+| setTimeout is used after each completed cycle. This prevents overlapping
+| uploads when one collection takes longer than the configured interval.
+|--------------------------------------------------------------------------
+*/
 
 function scheduleNextCycle() {
     if (stopping) {
@@ -30,62 +51,156 @@ function scheduleNextCycle() {
         );
 }
 
+/*
+|--------------------------------------------------------------------------
+| Docker Monitoring
+|--------------------------------------------------------------------------
+*/
+
+async function runDockerCycle() {
+    console.log();
+    console.log(
+        "Collecting Docker snapshot..."
+    );
+
+    const startedAt =
+        Date.now();
+
+    const snapshot =
+        await collectDockerSnapshot();
+
+    const response =
+        await sendDockerSnapshot(
+            snapshot
+        );
+
+    const elapsedSeconds =
+        (
+            (Date.now() - startedAt) /
+            1000
+        ).toFixed(1);
+
+    console.log(
+        "✅ Docker snapshot uploaded"
+    );
+
+    console.log({
+        engine:
+            snapshot.engineInfo.name,
+
+        version:
+            snapshot.engineInfo
+                .serverVersion,
+
+        containers:
+            snapshot.containers.length,
+
+        images:
+            snapshot.images.length,
+
+        networks:
+            snapshot.networks.length,
+
+        volumes:
+            snapshot.volumes.length,
+
+        accepted:
+            response?.accepted === true ||
+            response?.success === true,
+
+        elapsed:
+            `${elapsedSeconds}s`
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Host Monitoring
+|--------------------------------------------------------------------------
+*/
+
+async function runHostCycle() {
+    console.log();
+    console.log(
+        "Collecting host metrics..."
+    );
+
+    const startedAt =
+        Date.now();
+
+    const metrics =
+        await getSystemMetrics();
+
+    const response =
+        await sendHostMetrics(
+            metrics
+        );
+
+    const elapsedSeconds =
+        (
+            (Date.now() - startedAt) /
+            1000
+        ).toFixed(1);
+
+    console.log(
+        "✅ Host metrics uploaded"
+    );
+
+    console.log({
+        hostname:
+            metrics.hostname,
+
+        platform:
+            metrics.platform,
+
+        architecture:
+            metrics.architecture,
+
+        cpu:
+            `${metrics.cpu}%`,
+
+        memory:
+            `${metrics.memory}%`,
+
+        disk:
+            `${metrics.disk}%`,
+
+        uptime:
+            `${metrics.uptime}s`,
+
+        accepted:
+            response?.accepted === true ||
+            response?.success === true,
+
+        elapsed:
+            `${elapsedSeconds}s`
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Run Selected Mode
+|--------------------------------------------------------------------------
+*/
+
 async function runAgentCycle() {
-    const startedAt = Date.now();
-
     try {
-        console.log();
-        console.log(
-            "Collecting Docker snapshot..."
-        );
-
-        const snapshot =
-            await collectDockerSnapshot();
-
-        const response =
-            await sendDockerSnapshot(
-                snapshot
-            );
-
-        const elapsedSeconds =
-            (
-                (Date.now() - startedAt) /
-                1000
-            ).toFixed(1);
-
-        console.log(
-            "✅ Docker snapshot uploaded"
-        );
-
-        console.log({
-            engine:
-                snapshot.engineInfo.name,
-
-            version:
-                snapshot.engineInfo
-                    .serverVersion,
-
-            containers:
-                snapshot.containers.length,
-
-            images:
-                snapshot.images.length,
-
-            networks:
-                snapshot.networks.length,
-
-            volumes:
-                snapshot.volumes.length,
-
-            accepted:
-                response.success === true,
-
-            elapsed:
-                `${elapsedSeconds}s`
-        });
+        if (
+            MINERVA_AGENT_MODE ===
+            "host"
+        ) {
+            await runHostCycle();
+        } else {
+            await runDockerCycle();
+        }
     } catch (error) {
+        const modeName =
+            MINERVA_AGENT_MODE === "host"
+                ? "Host"
+                : "Docker";
+
         console.error(
-            "❌ Minerva Docker Agent:",
+            `❌ Minerva ${modeName} Agent:`,
             error.message
         );
     } finally {
@@ -93,8 +208,15 @@ async function runAgentCycle() {
     }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Graceful Shutdown
+|--------------------------------------------------------------------------
+*/
+
 function stopAgent(signal) {
-    stopping = true;
+    stopping =
+        true;
 
     if (nextCycleTimer) {
         clearTimeout(
@@ -109,20 +231,40 @@ function stopAgent(signal) {
     process.exit(0);
 }
 
+/*
+|--------------------------------------------------------------------------
+| Startup Validation
+|--------------------------------------------------------------------------
+*/
+
 if (!MINERVA_AGENT_KEY) {
     console.error(
-        "❌ MINERVA_AGENT_KEY is missing from agent/.env"
+        "❌ MINERVA_AGENT_KEY is required."
     );
 
     process.exit(1);
 }
 
+const agentName =
+    MINERVA_AGENT_MODE === "host"
+        ? "Host Agent"
+        : "Docker Agent";
+
+const uploadUrl =
+    MINERVA_AGENT_MODE === "host"
+        ? HOST_METRICS_URL
+        : DOCKER_SNAPSHOT_URL;
+
 console.log(
-    "🚀 Minerva Sentinel Docker Agent"
+    `🚀 Minerva Sentinel ${agentName}`
 );
 
 console.log(
-    `Backend: ${DOCKER_SNAPSHOT_URL}`
+    `Mode: ${MINERVA_AGENT_MODE}`
+);
+
+console.log(
+    `Backend: ${uploadUrl}`
 );
 
 console.log(
@@ -131,12 +273,14 @@ console.log(
 
 process.on(
     "SIGINT",
-    () => stopAgent("SIGINT")
+    () =>
+        stopAgent("SIGINT")
 );
 
 process.on(
     "SIGTERM",
-    () => stopAgent("SIGTERM")
+    () =>
+        stopAgent("SIGTERM")
 );
 
 runAgentCycle();
