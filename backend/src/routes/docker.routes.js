@@ -1,78 +1,97 @@
 const express =
-require("express");
+    require("express");
 
-const controller =
-require(
-    "../controllers/docker.controller"
-);
+const auth =
+    require(
+        "../middleware/auth.middleware"
+    );
+
+const dockerAgentAuth =
+    require(
+        "../middleware/docker-agent-auth.middleware"
+    );
+
+const connectionController =
+    require(
+        "../controllers/docker-connection.controller"
+    );
+
+const agentController =
+    require(
+        "../controllers/docker-agent.controller"
+    );
+
+const snapshotController =
+    require(
+        "../controllers/docker-snapshot.controller"
+    );
 
 const router =
-express.Router();
+    express.Router();
 
 /*
 |--------------------------------------------------------------------------
-| Docker Engine Information
+| Docker Agent Upload
 |--------------------------------------------------------------------------
 */
+
+router.post(
+    "/agent/snapshot",
+    dockerAgentAuth,
+    agentController.receiveSnapshot
+);
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated Browser Endpoints
+|--------------------------------------------------------------------------
+*/
+
+router.use(auth);
+
+router.get(
+    "/connections",
+    connectionController.getConnections
+);
+
+router.post(
+    "/connections",
+    connectionController.createConnection
+);
+
+router.delete(
+    "/connections/:id",
+    connectionController.disconnectConnection
+);
 
 router.get(
     "/info",
-    controller.info
+    snapshotController.info
 );
-
-/*
-|--------------------------------------------------------------------------
-| Docker Images
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/images",
-    controller.images
+    snapshotController.images
 );
-
-/*
-|--------------------------------------------------------------------------
-| Docker Networks
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/networks",
-    controller.networks
+    snapshotController.networks
 );
-
-/*
-|--------------------------------------------------------------------------
-| Docker Volumes
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/volumes",
-    controller.volumes
+    snapshotController.volumes
 );
-
-/*
-|--------------------------------------------------------------------------
-| All Containers
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/containers",
-    controller.containers
+    snapshotController.containers
 );
-
-/*
-|--------------------------------------------------------------------------
-| Single Container
-|--------------------------------------------------------------------------
-*/
 
 router.get(
     "/containers/:id",
-    controller.container
+    snapshotController.container
 );
 
 module.exports = router;
