@@ -1,24 +1,40 @@
 require("dotenv").config();
 
-const API_URL =
-    process.env.API_URL ||
-    "http://localhost:5000/api/metrics";
+function removeTrailingSlash(value) {
+    return String(value || "")
+        .trim()
+        .replace(/\/+$/, "");
+}
 
-const API_KEY =
-    process.env.API_KEY ||
-    "";
+const MINERVA_API_URL =
+    removeTrailingSlash(
+        process.env.MINERVA_API_URL ||
+        "http://localhost:5000/api"
+    );
 
-const INTERVAL =
+const MINERVA_AGENT_KEY =
+    String(
+        process.env.MINERVA_AGENT_KEY ||
+        ""
+    ).trim();
+
+const requestedInterval =
     Number(
         process.env.INTERVAL
-    ) || 10000;
+    );
+
+const INTERVAL =
+    Number.isFinite(requestedInterval) &&
+    requestedInterval >= 10000
+        ? requestedInterval
+        : 30000;
+
+const DOCKER_SNAPSHOT_URL =
+    `${MINERVA_API_URL}/docker/agent/snapshot`;
 
 module.exports = {
-
-    API_URL,
-
-    API_KEY,
-
+    MINERVA_API_URL,
+    MINERVA_AGENT_KEY,
+    DOCKER_SNAPSHOT_URL,
     INTERVAL
-
 };

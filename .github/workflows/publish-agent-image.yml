@@ -1,0 +1,60 @@
+name: Publish Minerva Sentinel Agent
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+      - main
+      - frontend-polish
+
+    paths:
+      - "agent/**"
+      - ".github/workflows/publish-agent-image.yml"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: semicrypt/minerva-sentinel-agent
+
+jobs:
+  publish-agent:
+    name: Build and publish agent
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Enable multi-platform builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Sign in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish agent image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./agent
+          file: ./agent/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/semicrypt/minerva-sentinel-agent:latest
+            ghcr.io/semicrypt/minerva-sentinel-agent:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=Minerva Sentinel Agent
+            org.opencontainers.image.description=User-owned Docker monitoring agent for Minerva Sentinel
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}

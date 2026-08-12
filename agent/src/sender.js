@@ -2,104 +2,64 @@ const axios =
     require("axios");
 
 const {
-    API_URL,
-    API_KEY
+    DOCKER_SNAPSHOT_URL,
+    MINERVA_AGENT_KEY
 } =
     require("./config");
 
-/*
-|--------------------------------------------------------------------------
-| Send Metrics
-|--------------------------------------------------------------------------
-*/
-
-async function sendMetrics(metrics) {
+async function sendDockerSnapshot(
+    snapshot
+) {
+    if (!MINERVA_AGENT_KEY) {
+        throw new Error(
+            "MINERVA_AGENT_KEY is not configured."
+        );
+    }
 
     try {
-
-        const headers = {
-
-            "Content-Type":
-                "application/json"
-
-        };
-
-        /*
-        | Send agent key when configured.
-        |
-        | The backend does not enforce this yet.
-        | We will use it later when securing agent ingestion.
-        */
-
-        if (API_KEY) {
-
-            headers[
-                "X-Minerva-Agent-Key"
-            ] =
-                API_KEY;
-
-        }
-
         const response =
             await axios.post(
-
-                API_URL,
-
-                metrics,
-
+                DOCKER_SNAPSHOT_URL,
+                snapshot,
                 {
+                    headers: {
+                        "Content-Type":
+                            "application/json",
 
-                    headers,
+                        "X-Minerva-Agent-Key":
+                            MINERVA_AGENT_KEY
+                    },
 
-                    timeout: 10000
+                    timeout: 30000,
 
+                    maxBodyLength:
+                        10 * 1024 * 1024
                 }
-
             );
-
-        console.log(
-            "✅ Metrics sent successfully"
-        );
 
         return response.data;
+    } catch (error) {
+        const serverMessage =
+            error.response?.data?.message;
 
-    }
+        const status =
+            error.response?.status;
 
-    catch (error) {
+        if (status) {
+            throw new Error(
+                `Snapshot upload failed with HTTP ${status}: ${
+                    serverMessage ||
+                    "Unknown server error."
+                }`
+            );
+        }
 
-        console.error(
-            "❌ Failed to send metrics"
+        throw new Error(
+            `Snapshot upload failed: ${error.message}`
         );
-
-        if (
-            error.response
-        ) {
-
-            console.error(
-                `HTTP ${error.response.status}`
-            );
-
-            console.error(
-                error.response.data
-            );
-
-        }
-        else {
-
-            console.error(
-                error.message
-            );
-
-        }
-
-        return null;
-
     }
-
 }
 
 module.exports = {
-
-    sendMetrics
-
+    sendDockerSnapshot
 };
