@@ -1,161 +1,476 @@
 import {
+    AlertCircle,
     Bell,
-    Mail,
+    CheckCircle2,
+    FileSearch,
+    RefreshCw,
     UserCheck,
-    Wrench,
-    CheckCircle2
+    Wrench
 } from "lucide-react";
 
-const timeline = [
+import {
+    useCallback,
+    useEffect,
+    useState
+} from "react";
 
-    {
-        time: "18:21",
-        title: "Alert Triggered",
-        description: "CPU usage exceeded 95% on Production API Server.",
+import api from "../../services/api";
+
+const eventStyles = {
+    DETECTED: {
+        title: "Incident Detected",
         icon: Bell,
-        color: "text-red-400"
+        iconColor: "text-red-400",
+        iconBackground: "bg-red-500/10",
+        lineColor: "bg-red-500/40"
     },
 
-    {
-        time: "18:22",
-        title: "Notifications Sent",
-        description: "Email and Slack notifications delivered successfully.",
-        icon: Mail,
-        color: "text-amber-400"
-    },
-
-    {
-        time: "18:23",
-        title: "Engineer Assigned",
-        description: "Incident assigned to the DevOps engineering team.",
+    ACKNOWLEDGED: {
+        title: "Incident Acknowledged",
         icon: UserCheck,
-        color: "text-cyan-400"
+        iconColor: "text-cyan-400",
+        iconBackground: "bg-cyan-500/10",
+        lineColor: "bg-cyan-500/40"
     },
 
-    {
-        time: "18:26",
-        title: "Investigation Started",
-        description: "Infrastructure diagnostics and container inspection initiated.",
-        icon: Wrench,
-        color: "text-violet-400"
-    },
-
-    {
-        time: "18:34",
+    RESOLVED: {
         title: "Incident Resolved",
-        description: "CPU utilization returned to normal operating levels.",
         icon: CheckCircle2,
-        color: "text-emerald-400"
+        iconColor: "text-emerald-400",
+        iconBackground: "bg-emerald-500/10",
+        lineColor: "bg-emerald-500/40"
+    },
+
+    ROOT_CAUSE_ADDED: {
+        title: "Root Cause Recorded",
+        icon: FileSearch,
+        iconColor: "text-violet-400",
+        iconBackground: "bg-violet-500/10",
+        lineColor: "bg-violet-500/40"
+    },
+
+    REMEDIATION_ADDED: {
+        title: "Remediation Recorded",
+        icon: Wrench,
+        iconColor: "text-amber-400",
+        iconBackground: "bg-amber-500/10",
+        lineColor: "bg-amber-500/40"
+    }
+};
+
+const defaultEventStyle = {
+    title: "Incident Activity",
+    icon: AlertCircle,
+    iconColor: "text-slate-300",
+    iconBackground: "bg-slate-700/50",
+    lineColor: "bg-slate-700"
+};
+
+function wait(milliseconds) {
+    return new Promise(resolve => {
+        window.setTimeout(resolve, milliseconds);
+    });
+}
+
+function getEventDescription(event) {
+    if (event.details) {
+        return event.details;
     }
 
-];
+    switch (event.eventType) {
+        case "DETECTED":
+            return (
+                event.incidentDescription ||
+                "No additional detection details were recorded."
+            );
+
+        case "ACKNOWLEDGED":
+            return "The incident was acknowledged.";
+
+        case "RESOLVED":
+            return "The incident was marked as resolved.";
+
+        case "ROOT_CAUSE_ADDED":
+            return "No additional root-cause details were recorded.";
+
+        case "REMEDIATION_ADDED":
+            return "No additional remediation details were recorded.";
+
+        default:
+            return "No additional activity details were recorded.";
+    }
+}
+
+function getValidDate(value) {
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+        ? null
+        : date;
+}
+
+function formatEventDate(value) {
+    const date = getValidDate(value);
+
+    if (!date) {
+        return "Date unavailable";
+    }
+
+    return new Intl.DateTimeFormat(
+        undefined,
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    ).format(date);
+}
+
+function formatEventTime(value) {
+    const date = getValidDate(value);
+
+    if (!date) {
+        return "Time unavailable";
+    }
+
+    return new Intl.DateTimeFormat(
+        undefined,
+        {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        }
+    ).format(date);
+}
+
+function formatRefreshTime(value) {
+    if (!value) {
+        return "";
+    }
+
+    return new Intl.DateTimeFormat(
+        undefined,
+        {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        }
+    ).format(value);
+}
 
 export default function AlertTimeline() {
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] =
+        useState(false);
+    const [error, setError] = useState("");
+    const [lastUpdated, setLastUpdated] =
+        useState(null);
 
-    return (
+    const loadTimeline = useCallback(
+        async (manualRefresh = false) => {
+            const refreshStartedAt = Date.now();
 
-        <section className="rounded-3xl border border-slate-800 bg-[#111827] p-8">
+            if (manualRefresh) {
+                setRefreshing(true);
+            }
 
-            <div className="mb-8">
+            try {
+                setError("");
 
-                <h2 className="text-3xl font-bold text-white">
+                const response = await api.get(
+                    "/incidents/timeline"
+                );
 
-                    Incident Timeline
+                const timelineEvents =
+                    Array.isArray(response.data?.data)
+                        ? response.data.data
+                        : [];
 
-                </h2>
+                setEvents(timelineEvents);
+                setLastUpdated(new Date());
+            } catch (requestError) {
+                console.error(
+                    "Unable to load incident timeline:",
+                    requestError
+                );
 
-                <p className="mt-2 text-slate-400">
+                setError(
+                    requestError.response?.data?.message ||
+                    "Unable to load the incident timeline."
+                );
+            } finally {
+                if (manualRefresh) {
+                    const elapsed =
+                        Date.now() - refreshStartedAt;
 
-                    Timeline of alert detection, notifications and incident resolution.
+                    const remaining =
+                        Math.max(0, 600 - elapsed);
 
-                </p>
-
-            </div>
-
-            <div className="space-y-6">
-
-                {
-
-                    timeline.map((event, index) => {
-
-                        const Icon = event.icon;
-
-                        return (
-
-                            <div
-                                key={event.title}
-                                className="flex gap-6"
-                            >
-
-                                <div className="flex flex-col items-center">
-
-                                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800">
-
-                                        <Icon
-                                            size={24}
-                                            className={event.color}
-                                        />
-
-                                    </div>
-
-                                    {
-
-                                        index !== timeline.length - 1 && (
-
-                                            <div className="mt-2 h-16 w-1 rounded-full bg-gradient-to-b from-red-500 via-orange-400 to-emerald-400" />
-
-                                        )
-
-                                    }
-
-                                </div>
-
-                                <div className="flex-1 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-
-                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-
-                                        <div>
-
-                                            <h3 className="text-xl font-bold text-white">
-
-                                                {event.title}
-
-                                            </h3>
-
-                                            <p className="mt-3 leading-7 text-slate-400">
-
-                                                {event.description}
-
-                                            </p>
-
-                                        </div>
-
-                                        <div className="rounded-full bg-slate-800 px-4 py-2">
-
-                                            <span className="font-semibold text-cyan-400">
-
-                                                {event.time}
-
-                                            </span>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        );
-
-                    })
-
+                    if (remaining > 0) {
+                        await wait(remaining);
+                    }
                 }
 
-            </div>
-
-        </section>
-
+                setLoading(false);
+                setRefreshing(false);
+            }
+        },
+        []
     );
 
+    useEffect(() => {
+        loadTimeline();
+
+        const handleIncidentUpdate = () => {
+            loadTimeline();
+        };
+
+        window.addEventListener(
+            "minerva:incidents-updated",
+            handleIncidentUpdate
+        );
+
+        return () => {
+            window.removeEventListener(
+                "minerva:incidents-updated",
+                handleIncidentUpdate
+            );
+        };
+    }, [loadTimeline]);
+
+    return (
+        <section className="rounded-3xl border border-slate-800 bg-[#111827] p-6 sm:p-8">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold text-white">
+                        Incident Timeline
+                    </h2>
+
+                    <p className="mt-2 text-slate-400">
+                        Persisted detection,
+                        acknowledgement, resolution,
+                        root-cause and remediation activity.
+                    </p>
+
+                    {!loading && !error && (
+                        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
+                            <span>
+                                {events.length} recorded{" "}
+                                {events.length === 1
+                                    ? "event"
+                                    : "events"}
+                            </span>
+
+                            {lastUpdated && (
+                                <span>
+                                    Last refreshed at{" "}
+                                    {formatRefreshTime(
+                                        lastUpdated
+                                    )}
+                                </span>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <button
+                    type="button"
+                    onClick={() => loadTimeline(true)}
+                    disabled={loading || refreshing}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 font-semibold text-slate-200 transition hover:border-cyan-500/60 hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <RefreshCw
+                        size={18}
+                        className={
+                            refreshing
+                                ? "animate-spin"
+                                : ""
+                        }
+                    />
+
+                    {refreshing
+                        ? "Refreshing..."
+                        : "Refresh Timeline"}
+                </button>
+            </div>
+
+            {loading && (
+                <div className="space-y-4">
+                    {[1, 2, 3].map(item => (
+                        <div
+                            key={item}
+                            className="h-28 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/50"
+                        />
+                    ))}
+                </div>
+            )}
+
+            {!loading && error && (
+                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle
+                            size={22}
+                            className="mt-0.5 shrink-0 text-red-400"
+                        />
+
+                        <div>
+                            <h3 className="font-semibold text-red-300">
+                                Timeline unavailable
+                            </h3>
+
+                            <p className="mt-1 text-sm text-red-200/80">
+                                {error}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!loading &&
+                !error &&
+                events.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-6 py-12 text-center">
+                        <Bell
+                            size={36}
+                            className="mx-auto text-slate-500"
+                        />
+
+                        <h3 className="mt-4 text-lg font-semibold text-white">
+                            No incident activity yet
+                        </h3>
+
+                        <p className="mt-2 text-slate-400">
+                            Genuine incident events will
+                            appear here when they are
+                            recorded.
+                        </p>
+                    </div>
+                )}
+
+            {!loading &&
+                !error &&
+                events.length > 0 && (
+                    <div className="max-h-[650px] overflow-y-auto overscroll-contain rounded-2xl border border-slate-800 bg-slate-950/20 p-4 pr-3 sm:p-6 sm:pr-4">
+                        <div className="space-y-0">
+                            {events.map(
+                                (event, index) => {
+                                    const style =
+                                        eventStyles[
+                                            event.eventType
+                                        ] ||
+                                        defaultEventStyle;
+
+                                    const Icon =
+                                        style.icon;
+
+                                    return (
+                                        <article
+                                            key={event.id}
+                                            className="flex gap-4 sm:gap-6"
+                                        >
+                                            <div className="flex flex-col items-center">
+                                                <div
+                                                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-700 ${style.iconBackground}`}
+                                                >
+                                                    <Icon
+                                                        size={
+                                                            22
+                                                        }
+                                                        className={
+                                                            style.iconColor
+                                                        }
+                                                    />
+                                                </div>
+
+                                                {index !==
+                                                    events.length -
+                                                        1 && (
+                                                    <div
+                                                        className={`min-h-8 w-px flex-1 ${style.lineColor}`}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            <div className="mb-6 min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 sm:p-6">
+                                                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="text-lg font-bold text-white sm:text-xl">
+                                                                {
+                                                                    style.title
+                                                                }
+                                                            </h3>
+
+                                                            <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
+                                                                Incident
+                                                                #
+                                                                {
+                                                                    event.incidentId
+                                                                }
+                                                            </span>
+                                                        </div>
+
+                                                        <p className="mt-2 font-medium text-slate-200">
+                                                            {
+                                                                event.incidentTitle
+                                                            }
+                                                        </p>
+
+                                                        {event.serviceName && (
+                                                            <p className="mt-1 text-sm text-cyan-400">
+                                                                Service:{" "}
+                                                                {
+                                                                    event.serviceName
+                                                                }
+                                                            </p>
+                                                        )}
+
+                                                        <p className="mt-3 leading-7 text-slate-400">
+                                                            {getEventDescription(
+                                                                event
+                                                            )}
+                                                        </p>
+
+                                                        {event.actorUserId && (
+                                                            <p className="mt-3 text-xs text-slate-500">
+                                                                Recorded
+                                                                by user
+                                                                #
+                                                                {
+                                                                    event.actorUserId
+                                                                }
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <time
+                                                        dateTime={
+                                                            event.createdAt
+                                                        }
+                                                        className="shrink-0 rounded-xl bg-slate-800 px-4 py-2 text-sm"
+                                                    >
+                                                        <span className="block font-semibold text-cyan-400">
+                                                            {formatEventTime(
+                                                                event.createdAt
+                                                            )}
+                                                        </span>
+
+                                                        <span className="mt-0.5 block text-xs text-slate-400">
+                                                            {formatEventDate(
+                                                                event.createdAt
+                                                            )}
+                                                        </span>
+                                                    </time>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    );
+                                }
+                            )}
+                        </div>
+                    </div>
+                )}
+        </section>
+    );
 }

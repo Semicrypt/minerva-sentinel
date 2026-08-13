@@ -1,15 +1,18 @@
 import {
-    Search,
     Bell,
-    Settings,
     ChevronDown,
-    Menu
+    Menu,
+    Search,
+    Settings
 } from "lucide-react";
 
 import {
     useLocation,
     useNavigate
 } from "react-router-dom";
+
+import { useAuth } from "../../context/AuthContext";
+import useIncidentCount from "../../hooks/useIncidentCount";
 
 const pages = {
     "/dashboard": {
@@ -69,14 +72,66 @@ const pages = {
 const iconButtonClass =
     "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/80 text-slate-400 transition hover:border-blue-500 hover:text-white sm:h-11 sm:w-11";
 
-export default function Navbar({ onMenuClick = () => {} }) {
+function formatRole(role) {
+    if (!role) {
+        return "User";
+    }
+
+    return role
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function getDisplayName(user) {
+    if (user?.full_name?.trim()) {
+        return user.full_name.trim();
+    }
+
+    if (user?.email) {
+        return user.email.split("@")[0];
+    }
+
+    return "User";
+}
+
+function getInitials(name) {
+    const words = name
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (words.length === 0) {
+        return "U";
+    }
+
+    if (words.length === 1) {
+        return words[0].slice(0, 2).toUpperCase();
+    }
+
+    return (
+        words[0][0] +
+        words[words.length - 1][0]
+    ).toUpperCase();
+}
+
+export default function Navbar({
+    onMenuClick = () => {}
+}) {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const current = pages[location.pathname] || {
-        title: "Minerva Sentinel",
-        subtitle: "Cloud Monitoring Platform"
-    };
+    const { user } = useAuth();
+    const activeIncidentCount = useIncidentCount();
+
+    const current =
+        pages[location.pathname] || {
+            title: "Minerva Sentinel",
+            subtitle: "Cloud Monitoring Platform"
+        };
+
+    const displayName = getDisplayName(user);
+    const initials = getInitials(displayName);
+    const displayRole = formatRole(user?.role);
 
     return (
         <header className="sticky top-0 z-40 border-b border-slate-800 bg-[#08111F]/90 backdrop-blur-xl">
@@ -117,17 +172,21 @@ export default function Navbar({ onMenuClick = () => {} }) {
 
                     <button
                         type="button"
-                        aria-label="View alerts"
+                        aria-label={`View alerts${
+                            activeIncidentCount > 0
+                                ? ` (${activeIncidentCount} active)`
+                                : ""
+                        }`}
                         onClick={() => navigate("/alerts")}
-                        className={iconButtonClass}
+                        className={`${iconButtonClass} relative`}
                     >
                         <Bell size={19} />
 
-                        <span className="absolute hidden" />
-
-                        <span className="relative -ml-3 -mt-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                            3
-                        </span>
+                        {activeIncidentCount > 0 && (
+                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                {activeIncidentCount}
+                            </span>
+                        )}
                     </button>
 
                     <button
@@ -141,21 +200,21 @@ export default function Navbar({ onMenuClick = () => {} }) {
 
                     <button
                         type="button"
-                        aria-label="Open account menu"
+                        aria-label="Open account settings"
                         onClick={() => navigate("/settings")}
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/80 transition hover:border-blue-500 sm:h-11 sm:w-auto sm:gap-3 sm:px-3"
                     >
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white">
-                            D
+                            {initials}
                         </span>
 
                         <span className="hidden text-left sm:block">
-                            <span className="block text-sm font-semibold text-white">
-                                Divine
+                            <span className="block max-w-36 truncate text-sm font-semibold text-white">
+                                {displayName}
                             </span>
 
                             <span className="block text-[11px] text-slate-400">
-                                Administrator
+                                {displayRole}
                             </span>
                         </span>
 
