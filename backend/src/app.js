@@ -19,6 +19,9 @@ const checkRoutes =
 const incidentRoutes =
     require("./routes/incident.routes");
 
+const alertPolicyRoutes =
+    require("./routes/alert-policy.routes");
+
 const metricsRoutes =
     require("./routes/metrics.routes");
 
@@ -58,9 +61,6 @@ app.use(
 |--------------------------------------------------------------------------
 | Request Logging
 |--------------------------------------------------------------------------
-|
-| This middleware records API requests after their responses finish.
-|--------------------------------------------------------------------------
 */
 
 app.use(
@@ -74,28 +74,17 @@ app.use(
 */
 
 app.get(
-
     "/api/health",
 
     (req, res) => {
-
-        res.json(
-            {
-
-                success:
-                    true,
-
-                message:
-                    "Minerva Sentinel API",
-
-                timestamp:
-                    new Date().toISOString()
-
-            }
-        );
-
+        res.json({
+            success: true,
+            message:
+                "Minerva Sentinel API",
+            timestamp:
+                new Date().toISOString()
+        });
     }
-
 );
 
 /*
@@ -127,6 +116,11 @@ app.use(
 app.use(
     "/api/incidents",
     incidentRoutes
+);
+
+app.use(
+    "/api/alert-policies",
+    alertPolicyRoutes
 );
 
 app.use(

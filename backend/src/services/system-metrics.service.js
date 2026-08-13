@@ -19,11 +19,8 @@ const COLLECTION_INTERVAL_MS = 5000;
 */
 
 let latestMetrics = null;
-
 let monitoringInterval = null;
-
 let monitoringStarted = false;
-
 let io = null;
 
 /*
@@ -32,59 +29,40 @@ let io = null;
 |--------------------------------------------------------------------------
 */
 
-function setSystemMetricsSocketIO(socketServer) {
-
+function setSystemMetricsSocketIO(
+    socketServer
+) {
     io = socketServer;
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Helper: Round Number
+| Helpers
 |--------------------------------------------------------------------------
 */
 
 function round(value, decimals = 2) {
-
     const number = Number(value);
 
     if (!Number.isFinite(number)) {
-
         return 0;
-
     }
 
     return Number(
         number.toFixed(decimals)
     );
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Helper: Convert Bytes To GB
-|--------------------------------------------------------------------------
-*/
-
 function bytesToGB(bytes) {
-
     return round(
         Number(bytes || 0) /
         1024 /
         1024 /
         1024
     );
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Helper: Format Uptime
-|--------------------------------------------------------------------------
-*/
-
 function formatUptime(seconds) {
-
     const totalSeconds =
         Math.floor(
             Number(seconds) || 0
@@ -97,44 +75,32 @@ function formatUptime(seconds) {
 
     const hours =
         Math.floor(
-            (totalSeconds % 86400) / 3600
+            (totalSeconds % 86400) /
+            3600
         );
 
     const minutes =
         Math.floor(
-            (totalSeconds % 3600) / 60
+            (totalSeconds % 3600) /
+            60
         );
 
     const remainingSeconds =
         totalSeconds % 60;
 
     return {
-
-        seconds:
-            totalSeconds,
-
+        seconds: totalSeconds,
         formatted:
             `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`
-
     };
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Helper: Find Main Disk
-|--------------------------------------------------------------------------
-*/
-
 function getMainDisk(filesystems) {
-
     if (
         !Array.isArray(filesystems) ||
         filesystems.length === 0
     ) {
-
         return null;
-
     }
 
     return (
@@ -143,50 +109,33 @@ function getMainDisk(filesystems) {
         ) ||
         filesystems[0]
     );
-
 }
 
-/*
-|--------------------------------------------------------------------------
-| Helper: Combine Network Stats
-|--------------------------------------------------------------------------
-*/
-
-function combineNetworkStats(networkStats) {
-
+function combineNetworkStats(
+    networkStats
+) {
     if (!Array.isArray(networkStats)) {
-
         return {
-
             interfaces: [],
-
             rxBytes: 0,
-
             txBytes: 0,
-
             rxPerSecond: 0,
-
             txPerSecond: 0
-
         };
-
     }
 
     const usableInterfaces =
         networkStats.filter(
             network => {
-
                 const iface =
                     String(
                         network.iface || ""
-                    )
-                    .toLowerCase();
+                    ).toLowerCase();
 
                 return (
                     iface !== "lo" &&
                     iface !== "loopback"
                 );
-
             }
         );
 
@@ -197,9 +146,7 @@ function combineNetworkStats(networkStats) {
 
     const totals =
         interfaces.reduce(
-
             (result, network) => {
-
                 result.rxBytes +=
                     Number(
                         network.rx_bytes
@@ -221,25 +168,16 @@ function combineNetworkStats(networkStats) {
                     ) || 0;
 
                 return result;
-
             },
-
             {
-
                 rxBytes: 0,
-
                 txBytes: 0,
-
                 rxPerSecond: 0,
-
                 txPerSecond: 0
-
             }
-
         );
 
     return {
-
         interfaces:
             interfaces.map(
                 network =>
@@ -265,9 +203,7 @@ function combineNetworkStats(networkStats) {
             Math.round(
                 totals.txPerSecond
             )
-
     };
-
 }
 
 /*
@@ -277,53 +213,26 @@ function combineNetworkStats(networkStats) {
 */
 
 async function collectSystemMetrics() {
-
     const [
-
         cpuInfo,
-
         cpuLoad,
-
         memory,
-
         filesystems,
-
         networkStats,
-
         osInfo
-
     ] = await Promise.all([
-
         si.cpu(),
-
         si.currentLoad(),
-
         si.mem(),
-
         si.fsSize(),
-
         si.networkStats(),
-
         si.osInfo()
-
     ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | CPU
-    |--------------------------------------------------------------------------
-    */
 
     const cpuUsage =
         round(
             cpuLoad.currentLoad
         );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Memory
-    |--------------------------------------------------------------------------
-    */
 
     const memoryUsage =
         memory.total > 0
@@ -335,12 +244,6 @@ async function collectSystemMetrics() {
             )
             : 0;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Disk
-    |--------------------------------------------------------------------------
-    */
-
     const mainDisk =
         getMainDisk(
             filesystems
@@ -349,7 +252,6 @@ async function collectSystemMetrics() {
     const disk =
         mainDisk
             ? {
-
                 filesystem:
                     mainDisk.fs || null,
 
@@ -390,49 +292,25 @@ async function collectSystemMetrics() {
                     round(
                         mainDisk.use
                     )
-
             }
             : {
-
                 filesystem: null,
-
                 mount: null,
-
                 totalBytes: 0,
-
                 usedBytes: 0,
-
                 availableBytes: 0,
-
                 totalGB: 0,
-
                 usedGB: 0,
-
                 availableGB: 0,
-
                 usage: 0
-
             };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Network
-    |--------------------------------------------------------------------------
-    */
 
     const network =
         combineNetworkStats(
             networkStats
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Final Metric Object
-    |--------------------------------------------------------------------------
-    */
-
     return {
-
         hostname:
             os.hostname(),
 
@@ -453,7 +331,6 @@ async function collectSystemMetrics() {
             os.arch(),
 
         cpu: {
-
             manufacturer:
                 cpuInfo.manufacturer ||
                 null,
@@ -484,11 +361,9 @@ async function collectSystemMetrics() {
 
             usage:
                 cpuUsage
-
         },
 
         memory: {
-
             totalBytes:
                 Number(
                     memory.total
@@ -531,7 +406,6 @@ async function collectSystemMetrics() {
 
             usage:
                 memoryUsage
-
         },
 
         disk,
@@ -544,11 +418,8 @@ async function collectSystemMetrics() {
             ),
 
         collectedAt:
-            new Date()
-                .toISOString()
-
+            new Date().toISOString()
     };
-
 }
 
 /*
@@ -558,43 +429,33 @@ async function collectSystemMetrics() {
 */
 
 function broadcastSystemMetrics(metrics) {
-
     if (!io || !metrics) {
-
         return;
-
     }
 
     io.emit(
         "system:metrics",
         metrics
     );
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Persist Metrics
+| Persist Internal Metrics
 |--------------------------------------------------------------------------
 |
-| The live monitoring object contains rich nested information for the
-| dashboard.
-|
-| PostgreSQL uses a smaller flat structure for historical metrics and
-| host inventory.
+| Internal backend metrics are stored only as metric history. They must not
+| create Infrastructure hosts because the backend runs inside Docker and its
+| hostname changes every time the container is rebuilt.
 |--------------------------------------------------------------------------
 */
 
 async function persistSystemMetrics(metrics) {
-
     if (!metrics) {
-
         return null;
-
     }
 
     const databaseMetrics = {
-
         hostname:
             metrics.hostname,
 
@@ -615,35 +476,24 @@ async function persistSystemMetrics(metrics) {
 
         architecture:
             metrics.architecture
-
     };
 
     try {
-
-        return await metricsService.saveMetrics(
-            databaseMetrics
-        );
-
-    }
-
-    catch (error) {
-
+        return await metricsService
+            .saveMetricsHistory(
+                databaseMetrics
+            );
+    } catch (error) {
         /*
-        | Database failure should not stop live monitoring.
-        |
-        | Dashboard and Socket.IO can continue operating even if
-        | PostgreSQL temporarily becomes unavailable.
-        */
-
+         * Database failure must not stop live monitoring.
+         */
         console.error(
             "❌ System metrics persistence failed:",
             error.message
         );
 
         return null;
-
     }
-
 }
 
 /*
@@ -653,27 +503,20 @@ async function persistSystemMetrics(metrics) {
 */
 
 async function runMonitoringCycle() {
-
     try {
-
         const metrics =
             await collectSystemMetrics();
 
-        latestMetrics =
-            metrics;
-
-        /*
-        | Send live values immediately.
-        */
+        latestMetrics = metrics;
 
         broadcastSystemMetrics(
             metrics
         );
 
         /*
-        | Store history and update the host inventory.
-        */
-
+         * Save history without adding the backend container
+         * to the Infrastructure host inventory.
+         */
         await persistSystemMetrics(
             metrics
         );
@@ -683,20 +526,14 @@ async function runMonitoringCycle() {
         );
 
         return metrics;
-
-    }
-
-    catch (error) {
-
+    } catch (error) {
         console.error(
             "❌ System metrics collection failed:",
             error.message
         );
 
         return null;
-
     }
-
 }
 
 /*
@@ -706,15 +543,11 @@ async function runMonitoringCycle() {
 */
 
 async function startSystemMonitoring() {
-
     if (monitoringStarted) {
-
         return;
-
     }
 
-    monitoringStarted =
-        true;
+    monitoringStarted = true;
 
     console.log(
         "📡 System monitoring started"
@@ -728,13 +561,9 @@ async function startSystemMonitoring() {
 
     monitoringInterval =
         setInterval(
-
             runMonitoringCycle,
-
             COLLECTION_INTERVAL_MS
-
         );
-
 }
 
 /*
@@ -744,21 +573,15 @@ async function startSystemMonitoring() {
 */
 
 function stopSystemMonitoring() {
-
     if (monitoringInterval) {
-
         clearInterval(
             monitoringInterval
         );
 
-        monitoringInterval =
-            null;
-
+        monitoringInterval = null;
     }
 
-    monitoringStarted =
-        false;
-
+    monitoringStarted = false;
 }
 
 /*
@@ -768,15 +591,11 @@ function stopSystemMonitoring() {
 */
 
 async function getSystemMetrics() {
-
     if (latestMetrics) {
-
         return latestMetrics;
-
     }
 
     return runMonitoringCycle();
-
 }
 
 /*
@@ -786,9 +605,7 @@ async function getSystemMetrics() {
 */
 
 function getMonitoringStatus() {
-
     return {
-
         running:
             monitoringStarted,
 
@@ -805,27 +622,16 @@ function getMonitoringStatus() {
             latestMetrics
                 ? latestMetrics.collectedAt
                 : null
-
     };
-
 }
 
 module.exports = {
-
     collectSystemMetrics,
-
     runMonitoringCycle,
-
     startSystemMonitoring,
-
     stopSystemMonitoring,
-
     getSystemMetrics,
-
     getMonitoringStatus,
-
     setSystemMetricsSocketIO,
-
     persistSystemMetrics
-
 };

@@ -1,41 +1,24 @@
 const repository =
-require("../repositories/host.repository");
+    require("../repositories/host.repository");
 
-/*
-|--------------------------------------------------------------------------
-| Get All Hosts
-|--------------------------------------------------------------------------
-*/
-
-async function getHosts() {
-
-    return repository.getHosts();
-
+async function getHosts(userId) {
+    return repository.getHosts(
+        userId
+    );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Get One Host
-|--------------------------------------------------------------------------
-*/
-
-async function getHostByHostname(hostname) {
-
-    const hosts =
-        await repository.getHosts();
-
-    return hosts.find(
-
-        host => host.hostname === hostname
-
-    ) || null;
-
+async function getHostByHostname(
+    userId,
+    hostname
+) {
+    return repository
+        .getHostByHostname(
+            userId,
+            hostname
+        );
 }
 
 module.exports = {
-
     getHosts,
-
     getHostByHostname
-
 };

@@ -12,40 +12,30 @@ const {
 } =
     require("./host-health.service");
 
+function validateMetrics(metrics) {
+    if (
+        metrics.cpu === undefined ||
+        metrics.memory === undefined ||
+        metrics.disk === undefined
+    ) {
+        throw new ValidationError(
+            "Incomplete metrics received."
+        );
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
-| Save Metrics
+| Save Agent Metrics
+|--------------------------------------------------------------------------
+|
+| Genuine monitoring-agent metrics are saved to history and update the
+| Infrastructure host inventory.
 |--------------------------------------------------------------------------
 */
 
 async function saveMetrics(metrics) {
-
-    if (
-
-        metrics.cpu === undefined ||
-
-        metrics.memory === undefined ||
-
-        metrics.disk === undefined
-
-    ) {
-
-        throw new ValidationError(
-            "Incomplete metrics received."
-        );
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Determine Host Health
-    |--------------------------------------------------------------------------
-    |
-    | Any incoming metric means the machine is currently reachable.
-    |
-    | Its state is therefore either ONLINE or WARNING.
-    |--------------------------------------------------------------------------
-    */
+    validateMetrics(metrics);
 
     const status =
         determineResourceStatus(
@@ -53,98 +43,70 @@ async function saveMetrics(metrics) {
         );
 
     const hostMetrics = {
-
         ...metrics,
-
         status
-
     };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Save Historical Metrics
-    |--------------------------------------------------------------------------
-    */
 
     const savedMetrics =
         await metricsRepository.saveMetrics(
             metrics
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Update Current Host
-    |--------------------------------------------------------------------------
-    */
-
     await hostRepository.updateHost(
         hostMetrics
     );
 
     return savedMetrics;
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Latest Metrics - All Hosts
+| Save Internal System Metrics
+|--------------------------------------------------------------------------
+|
+| Minerva Sentinel monitors the machine/container running its backend.
+| These values belong to dashboard history, but the backend container must
+| not be registered as an Infrastructure host.
 |--------------------------------------------------------------------------
 */
+
+async function saveMetricsHistory(metrics) {
+    validateMetrics(metrics);
+
+    return metricsRepository.saveMetrics(
+        metrics
+    );
+}
 
 async function getLatestMetrics() {
-
-    return metricsRepository.getLatestMetrics();
-
+    return metricsRepository
+        .getLatestMetrics();
 }
-
-/*
-|--------------------------------------------------------------------------
-| Latest Metrics - Single Host
-|--------------------------------------------------------------------------
-*/
 
 async function getLatestMetricByHostname(
     hostname
 ) {
-
-    return metricsRepository.getLatestMetricByHostname(
-        hostname
-    );
-
+    return metricsRepository
+        .getLatestMetricByHostname(
+            hostname
+        );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Metric History
-|--------------------------------------------------------------------------
-*/
-
 async function getMetricHistory(
-
     hostname,
-
     limit = 30
-
 ) {
-
-    return metricsRepository.getMetricHistory(
-
-        hostname,
-
-        limit
-
-    );
-
+    return metricsRepository
+        .getMetricHistory(
+            hostname,
+            limit
+        );
 }
 
 module.exports = {
-
     saveMetrics,
-
+    saveMetricsHistory,
     getLatestMetrics,
-
     getLatestMetricByHostname,
-
     getMetricHistory
-
 };

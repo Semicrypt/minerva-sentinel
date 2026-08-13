@@ -1,88 +1,94 @@
 const hostService =
-require("../services/host.service");
+    require("../services/host.service");
 
-/*
-|--------------------------------------------------------------------------
-| Get All Hosts
-|--------------------------------------------------------------------------
-*/
+function getUserId(req) {
+    const userId =
+        Number(req.user?.id);
 
-async function getAll(req, res, next) {
-
-    try {
-
-        const hosts =
-            await hostService.getHosts();
-
-        res.json({
-
-            success: true,
-
-            data: hosts
-
-        });
-
-    }
-
-    catch (error) {
-
-        next(error);
-
-    }
-
+    return Number.isInteger(userId) &&
+        userId > 0
+        ? userId
+        : null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Get One Host
-|--------------------------------------------------------------------------
-*/
-
-async function getOne(req, res, next) {
-
+async function getAll(req, res, next) {
     try {
+        const userId =
+            getUserId(req);
 
-        const host =
-            await hostService.getHostByHostname(
-
-                req.params.hostname
-
-            );
-
-        if (!host) {
-
-            return res.status(404).json({
-
+        if (!userId) {
+            return res.status(401).json({
                 success: false,
-
-                message: "Host not found."
-
+                message:
+                    "Authenticated user is invalid."
             });
-
         }
 
-        res.json({
+        const hosts =
+            await hostService.getHosts(
+                userId
+            );
 
+        return res.json({
             success: true,
-
-            data: host
-
+            data: hosts
         });
-
+    } catch (error) {
+        return next(error);
     }
+}
 
-    catch (error) {
+async function getOne(req, res, next) {
+    try {
+        const userId =
+            getUserId(req);
 
-        next(error);
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message:
+                    "Authenticated user is invalid."
+            });
+        }
 
+        const hostname =
+            String(
+                req.params.hostname || ""
+            ).trim();
+
+        if (!hostname) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Hostname is required."
+            });
+        }
+
+        const host =
+            await hostService
+                .getHostByHostname(
+                    userId,
+                    hostname
+                );
+
+        if (!host) {
+            return res.status(404).json({
+                success: false,
+                message:
+                    "Host was not found."
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: host
+        });
+    } catch (error) {
+        return next(error);
     }
-
 }
 
 module.exports = {
-
     getAll,
-
     getOne
-
 };
