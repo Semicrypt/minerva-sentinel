@@ -1,19 +1,29 @@
 import { Navigate } from "react-router-dom";
 
-import { isAuthenticated } from "../../services/authService";
+import { useAuth } from "../../context/AuthContext";
 
-export default function ProtectedRoute({
+export default function ProtectedRoute({ children }) {
+    const {
+        user,
+        loading
+    } = useAuth();
 
-    children
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-[#050816] text-slate-300">
+                Loading your workspace...
+            </div>
+        );
+    }
 
-}) {
-
-    if (!isAuthenticated()) {
-
-        return <Navigate to="/login" replace />;
-
+    if (!user) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+            />
+        );
     }
 
     return children;
-
 }

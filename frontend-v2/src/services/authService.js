@@ -1,52 +1,120 @@
 import api from "./api";
 
-export async function login(email, password) {
+export const AUTH_CHANGED_EVENT =
+    "minerva:auth-changed";
 
-    const response = await api.post("/auth/login", {
+function notifyAuthChanged(user) {
+    if (typeof window === "undefined") {
+        return;
+    }
 
-        email,
-        password
-
-    });
-
-    const token = response.data.data.token;
-
-    localStorage.setItem("token", token);
-
-    return response.data.data;
-
+    window.dispatchEvent(
+        new CustomEvent(
+            AUTH_CHANGED_EVENT,
+            {
+                detail: {
+                    user
+                }
+            }
+        )
+    );
 }
 
-export async function register(fullName, email, password) {
+export async function login(
+    email,
+    password
+) {
+    const response =
+        await api.post(
+            "/auth/login",
+            {
+                email,
+                password
+            }
+        );
 
-    const response = await api.post("/auth/register", {
+    const data =
+        response.data?.data || {};
 
-        fullName,
-        email,
-        password
+    const token =
+        data.token;
 
-    });
+    if (!token) {
+        throw new Error(
+            "The login response did not include an authentication token."
+        );
+    }
+
+    localStorage.setItem(
+        "token",
+        token
+    );
+
+    try {
+        /*
+        | Load the authenticated account before
+        | Login.jsx navigates to the dashboard.
+        */
+
+        const user =
+            await getCurrentUser();
+
+        notifyAuthChanged(user);
+
+        return {
+            ...data,
+            user
+        };
+    } catch (error) {
+        localStorage.removeItem(
+            "token"
+        );
+
+        notifyAuthChanged(null);
+
+        throw error;
+    }
+}
+
+export async function register(
+    fullName,
+    email,
+    password
+) {
+    const response =
+        await api.post(
+            "/auth/register",
+            {
+                fullName,
+                email,
+                password
+            }
+        );
 
     return response.data;
-
 }
 
 export async function getCurrentUser() {
+    const response =
+        await api.get(
+            "/auth/me"
+        );
 
-    const response = await api.get("/auth/me");
-
-    return response.data.data;
-
+    return response.data?.data;
 }
 
 export function logout() {
+    localStorage.removeItem(
+        "token"
+    );
 
-    localStorage.removeItem("token");
-
+    notifyAuthChanged(null);
 }
 
 export function isAuthenticated() {
-
-    return !!localStorage.getItem("token");
-
+    return Boolean(
+        localStorage.getItem(
+            "token"
+        )
+    );
 }

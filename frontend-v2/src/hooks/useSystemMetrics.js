@@ -3,37 +3,186 @@ import {
     useState
 } from "react";
 
-import socket from "../services/socketService";
+import {
+    useAuth
+} from "../context/AuthContext";
 
 import {
-    getSystemMetrics
-} from "../services/metrics.service";
-
-/*
-|--------------------------------------------------------------------------
-| System Metrics Hook
-|--------------------------------------------------------------------------
-|
-| Central place for React components to access live infrastructure metrics.
-|
-| Responsibilities:
-|
-| 1. Load the latest metric through REST.
-| 2. Listen for Socket.IO system:metrics events.
-| 3. Track connection status.
-| 4. Keep a short rolling history for sparklines.
-|
-*/
+    getHosts
+} from "../services/host.service";
 
 const MAX_HISTORY_POINTS = 20;
+const REFRESH_INTERVAL_MS = 10000;
+
+function createEmptyHistory() {
+    return {
+        cpu: [],
+        memory: [],
+        disk: [],
+        network: []
+    };
+}
+
+function getNumber(
+    object,
+    keys
+) {
+    for (const key of keys) {
+        const value =
+            Number(object?.[key]);
+
+        if (Number.isFinite(value)) {
+            return value;
+        }
+    }
+
+    return 0;
+}
+
+function isActiveHost(host) {
+    const status =
+        String(
+            host?.status || ""
+        ).toUpperCase();
+
+    return (
+        status === "ONLINE" ||
+        status === "WARNING"
+    );
+}
+
+function average(
+    hosts,
+    keys
+) {
+    if (hosts.length === 0) {
+        return 0;
+    }
+
+    const total =
+        hosts.reduce(
+            (sum, host) =>
+                sum +
+                getNumber(
+                    host,
+                    keys
+                ),
+            0
+        );
+
+    return Number(
+        (
+            total /
+            hosts.length
+        ).toFixed(2)
+    );
+}
+
+function createAccountMetrics(
+    activeHosts
+) {
+    if (activeHosts.length === 0) {
+        return null;
+    }
+
+    const singleHost =
+        activeHosts.length === 1
+            ? activeHosts[0]
+            : null;
+
+    return {
+        hostname:
+            singleHost?.hostname ||
+            `${activeHosts.length} active hosts`,
+
+        platform:
+            singleHost?.platform ||
+            "multiple",
+
+        architecture:
+            singleHost?.architecture ||
+            "multiple",
+
+        cpu: {
+            usage:
+                average(
+                    activeHosts,
+                    [
+                        "latest_cpu",
+                        "latestCpu"
+                    ]
+                )
+        },
+
+        memory: {
+            usage:
+                average(
+                    activeHosts,
+                    [
+                        "latest_memory",
+                        "latestMemory"
+                    ]
+                )
+        },
+
+        disk: {
+            usage:
+                average(
+                    activeHosts,
+                    [
+                        "latest_disk",
+                        "latestDisk"
+                    ]
+                )
+        },
+
+        uptime: {
+            seconds:
+                average(
+                    activeHosts,
+                    [
+                        "latest_uptime",
+                        "latestUptime"
+                    ]
+                )
+        },
+
+        /*
+        | Network usage is not currently stored
+        | in the user-owned hosts table.
+        */
+
+        network: {
+            rxPerSecond: 0,
+            txPerSecond: 0,
+            available: false
+        },
+
+        source:
+            "account-owned-hosts"
+    };
+}
 
 export default function useSystemMetrics() {
+    const {
+        user
+    } = useAuth();
 
     const [metrics, setMetrics] =
         useState(null);
 
-    const [connected, setConnected] =
-        useState(socket.connected);
+    const [history, setHistory] =
+        useState(
+            createEmptyHistory
+        );
+
+    const [hostCount, setHostCount] =
+        useState(0);
+
+    const [
+        activeHostCount,
+        setActiveHostCount
+    ] = useState(0);
 
     const [loading, setLoading] =
         useState(true);
@@ -41,314 +190,151 @@ export default function useSystemMetrics() {
     const [error, setError] =
         useState(null);
 
-    const [history, setHistory] =
-        useState({
-
-            cpu: [],
-
-            memory: [],
-
-            disk: [],
-
-            network: []
-
-        });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Store Metric Sample
-    |--------------------------------------------------------------------------
-    */
-
-    function handleMetrics(newMetrics) {
-
-        if (!newMetrics) {
-            return;
-        }
-
-        setMetrics(
-            newMetrics
-        );
-
-        setHistory(previous => {
-
-            const networkRate =
-                (
-                    Number(
-                        newMetrics.network?.rxPerSecond
-                    ) || 0
-                ) +
-                (
-                    Number(
-                        newMetrics.network?.txPerSecond
-                    ) || 0
-                );
-
-            return {
-
-                cpu: [
-                    ...previous.cpu,
-                    newMetrics.cpu?.usage || 0
-                ].slice(
-                    -MAX_HISTORY_POINTS
-                ),
-
-                memory: [
-                    ...previous.memory,
-                    newMetrics.memory?.usage || 0
-                ].slice(
-                    -MAX_HISTORY_POINTS
-                ),
-
-                disk: [
-                    ...previous.disk,
-                    newMetrics.disk?.usage || 0
-                ].slice(
-                    -MAX_HISTORY_POINTS
-                ),
-
-                network: [
-                    ...previous.network,
-                    networkRate
-                ].slice(
-                    -MAX_HISTORY_POINTS
-                )
-
-            };
-
-        });
-
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Setup
-    |--------------------------------------------------------------------------
-    */
-
     useEffect(() => {
-
         let mounted = true;
+        let intervalId;
 
         /*
-        |--------------------------------------------------------------------------
-        | Initial REST Request
-        |--------------------------------------------------------------------------
+        | Clear the previous account immediately
+        | whenever the logged-in user changes.
         */
 
-        async function loadInitialMetrics() {
+        setMetrics(null);
+        setHistory(
+            createEmptyHistory()
+        );
+        setHostCount(0);
+        setActiveHostCount(0);
+        setError(null);
+        setLoading(true);
+
+        async function loadOwnedHosts() {
+            if (!user?.id) {
+                if (mounted) {
+                    setLoading(false);
+                }
+
+                return;
+            }
 
             try {
-
-                const data =
-                    await getSystemMetrics();
+                const response =
+                    await getHosts();
 
                 if (!mounted) {
                     return;
                 }
 
-                handleMetrics(
-                    data
+                const hosts =
+                    Array.isArray(response)
+                        ? response
+                        : [];
+
+                const activeHosts =
+                    hosts.filter(
+                        isActiveHost
+                    );
+
+                const accountMetrics =
+                    createAccountMetrics(
+                        activeHosts
+                    );
+
+                setHostCount(
+                    hosts.length
                 );
 
-                setError(
-                    null
+                setActiveHostCount(
+                    activeHosts.length
                 );
 
-            }
+                setMetrics(
+                    accountMetrics
+                );
 
-            catch (requestError) {
+                setError(null);
 
+                if (!accountMetrics) {
+                    setHistory(
+                        createEmptyHistory()
+                    );
+
+                    return;
+                }
+
+                setHistory(previous => ({
+                    cpu: [
+                        ...previous.cpu,
+                        accountMetrics.cpu.usage
+                    ].slice(
+                        -MAX_HISTORY_POINTS
+                    ),
+
+                    memory: [
+                        ...previous.memory,
+                        accountMetrics.memory.usage
+                    ].slice(
+                        -MAX_HISTORY_POINTS
+                    ),
+
+                    disk: [
+                        ...previous.disk,
+                        accountMetrics.disk.usage
+                    ].slice(
+                        -MAX_HISTORY_POINTS
+                    ),
+
+                    network: []
+                }));
+            } catch (requestError) {
                 console.error(
-                    "Unable to load system metrics:",
+                    "Unable to load account hosts:",
                     requestError
                 );
 
                 if (mounted) {
+                    setMetrics(null);
+                    setHostCount(0);
+                    setActiveHostCount(0);
 
                     setError(
-                        "Unable to load system metrics."
+                        requestError.response?.data
+                            ?.message ||
+                        "Unable to load your infrastructure."
                     );
-
                 }
-
-            }
-
-            finally {
-
+            } finally {
                 if (mounted) {
-
-                    setLoading(
-                        false
-                    );
-
+                    setLoading(false);
                 }
-
             }
-
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Socket Events
-        |--------------------------------------------------------------------------
-        */
+        loadOwnedHosts();
 
-        function handleConnect() {
-
-            if (!mounted) {
-                return;
-            }
-
-            setConnected(
-                true
+        intervalId =
+            window.setInterval(
+                loadOwnedHosts,
+                REFRESH_INTERVAL_MS
             );
-
-            setError(
-                null
-            );
-
-        }
-
-        function handleDisconnect() {
-
-            if (!mounted) {
-                return;
-            }
-
-            setConnected(
-                false
-            );
-
-        }
-
-        function handleSocketMetrics(
-            newMetrics
-        ) {
-
-            if (!mounted) {
-                return;
-            }
-
-            handleMetrics(
-                newMetrics
-            );
-
-            setLoading(
-                false
-            );
-
-            setError(
-                null
-            );
-
-        }
-
-        function handleConnectError(
-            socketError
-        ) {
-
-            console.error(
-                "Socket.IO connection error:",
-                socketError.message
-            );
-
-            if (mounted) {
-
-                setConnected(
-                    false
-                );
-
-            }
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Register Listeners
-        |--------------------------------------------------------------------------
-        */
-
-        socket.on(
-            "connect",
-            handleConnect
-        );
-
-        socket.on(
-            "disconnect",
-            handleDisconnect
-        );
-
-        socket.on(
-            "connect_error",
-            handleConnectError
-        );
-
-        socket.on(
-            "system:metrics",
-            handleSocketMetrics
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Ensure Socket Is Connected
-        |--------------------------------------------------------------------------
-        */
-
-        if (!socket.connected) {
-
-            socket.connect();
-
-        }
-
-        loadInitialMetrics();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Cleanup
-        |--------------------------------------------------------------------------
-        */
 
         return () => {
-
             mounted = false;
 
-            socket.off(
-                "connect",
-                handleConnect
+            window.clearInterval(
+                intervalId
             );
-
-            socket.off(
-                "disconnect",
-                handleDisconnect
-            );
-
-            socket.off(
-                "connect_error",
-                handleConnectError
-            );
-
-            socket.off(
-                "system:metrics",
-                handleSocketMetrics
-            );
-
         };
-
-    }, []);
+    }, [user?.id]);
 
     return {
-
         metrics,
-
         history,
-
-        connected,
-
+        connected:
+            activeHostCount > 0,
         loading,
-
-        error
-
+        error,
+        hostCount,
+        activeHostCount
     };
-
 }
