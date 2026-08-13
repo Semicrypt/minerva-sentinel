@@ -1,26 +1,44 @@
 const pool =
     require("../config/database");
 
+function validateUserId(userId) {
+    const value = Number(userId);
+
+    if (
+        !Number.isInteger(value) ||
+        value <= 0
+    ) {
+        throw new Error(
+            "A valid host owner is required."
+        );
+    }
+
+    return value;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Update Host
 |--------------------------------------------------------------------------
 |
-| A fresh metric payload automatically creates the host if it does not
-| already exist.
-|
-| Existing hosts are updated by hostname.
+| Hosts are unique within an account. Different users may monitor machines
+| that have the same hostname.
 |--------------------------------------------------------------------------
 */
 
-async function updateHost(metrics) {
+async function updateHost(
+    metrics,
+    userId
+) {
+    const ownerId =
+        validateUserId(userId);
 
     const result =
         await pool.query(
-
             `
             INSERT INTO hosts
             (
+                user_id,
                 hostname,
                 platform,
                 architecture,
@@ -31,7 +49,6 @@ async function updateHost(metrics) {
                 last_seen,
                 status
             )
-
             VALUES
             (
                 $1,
@@ -41,14 +58,13 @@ async function updateHost(metrics) {
                 $5,
                 $6,
                 $7,
+                $8,
                 NOW(),
-                $8
+                $9
             )
-
-            ON CONFLICT (hostname)
-
+            ON CONFLICT
+                (user_id, hostname)
             DO UPDATE SET
-
                 platform =
                     EXCLUDED.platform,
 
@@ -75,59 +91,77 @@ async function updateHost(metrics) {
 
                 updated_at =
                     NOW()
-
             RETURNING *;
             `,
-
             [
-
+                ownerId,
                 metrics.hostname,
-
                 metrics.platform,
-
                 metrics.architecture,
-
                 metrics.cpu,
-
                 metrics.memory,
-
                 metrics.disk,
-
                 metrics.uptime,
-
                 metrics.status
-
             ]
-
         );
 
     return result.rows[0];
-
 }
 
 /*
 |--------------------------------------------------------------------------
-| Get All Hosts
+| Get User Hosts
 |--------------------------------------------------------------------------
 */
 
-async function getHosts() {
+async function getHosts(userId) {
+    const ownerId =
+        validateUserId(userId);
 
     const result =
         await pool.query(
-
             `
             SELECT *
-
             FROM hosts
-
+            WHERE user_id = $1
             ORDER BY hostname;
-            `
-
+            `,
+            [ownerId]
         );
 
     return result.rows;
+}
 
+/*
+|--------------------------------------------------------------------------
+| Get One User Host
+|--------------------------------------------------------------------------
+*/
+
+async function getHostByHostname(
+    userId,
+    hostname
+) {
+    const ownerId =
+        validateUserId(userId);
+
+    const result =
+        await pool.query(
+            `
+            SELECT *
+            FROM hosts
+            WHERE user_id = $1
+            AND hostname = $2
+            LIMIT 1;
+            `,
+            [
+                ownerId,
+                hostname
+            ]
+        );
+
+    return result.rows[0] || null;
 }
 
 /*
@@ -135,58 +169,40 @@ async function getHosts() {
 | Mark Stale Hosts Offline
 |--------------------------------------------------------------------------
 |
-| PostgreSQL performs the time comparison itself.
-|
-| This avoids browser timezone problems and keeps health evaluation inside
-| the backend/database layer.
+| This background health operation evaluates all owned hosts. Host reads
+| remain restricted to the authenticated owner.
 |--------------------------------------------------------------------------
 */
 
 async function markOfflineHosts(
     thresholdSeconds = 30
 ) {
-
     const result =
         await pool.query(
-
             `
             UPDATE hosts
-
             SET
-
                 status = 'OFFLINE',
-
                 updated_at = NOW()
-
             WHERE
-
-                last_seen IS NULL
-
-                OR last_seen <
-                    NOW() -
-                    ($1 * INTERVAL '1 second')
-
+                (
+                    last_seen IS NULL
+                    OR last_seen <
+                        NOW() -
+                        ($1 * INTERVAL '1 second')
+                )
             AND status <> 'OFFLINE'
-
             RETURNING *;
             `,
-
-            [
-                thresholdSeconds
-            ]
-
+            [thresholdSeconds]
         );
 
     return result.rows;
-
 }
 
 module.exports = {
-
     updateHost,
-
     getHosts,
-
+    getHostByHostname,
     markOfflineHosts
-
 };
