@@ -1,31 +1,33 @@
-import DashboardLayout from "../layouts/DashboardLayout";
-import DashboardHeader from "../components/dashboard/DashboardHeader";
-
-import StatCard from "../components/ui/StatCard";
-
-import PerformanceChart from "../components/dashboard/widgets/PerformanceChart";
-import AlertsPanel from "../components/dashboard/widgets/AlertsPanel";
-import RunningServices from "../components/dashboard/widgets/RunningServices";
-import SystemInformation from "../components/dashboard/widgets/SystemInformation";
-import RecentActivity from "../components/dashboard/widgets/RecentActivity";
-
-import useSystemMetrics from "../hooks/useSystemMetrics";
+import {
+    Link
+} from "react-router-dom";
 
 import {
+    AlertTriangle,
     Cpu,
-    MemoryStick,
     HardDrive,
-    Server
+    LoaderCircle,
+    MemoryStick,
+    Server,
+    WifiOff
 } from "lucide-react";
 
-/*
-|--------------------------------------------------------------------------
-| Helpers
-|--------------------------------------------------------------------------
-*/
+import DashboardLayout from
+    "../layouts/DashboardLayout";
+
+import DashboardHeader from
+    "../components/dashboard/DashboardHeader";
+
+import StatCard from
+    "../components/ui/StatCard";
+
+import AlertsPanel from
+    "../components/dashboard/widgets/AlertsPanel";
+
+import useSystemMetrics from
+    "../hooks/useSystemMetrics";
 
 function metricStatus(value) {
-
     if (value >= 90) {
         return "critical";
     }
@@ -35,23 +37,17 @@ function metricStatus(value) {
     }
 
     return "healthy";
-
 }
 
-function metricTrend(
-    history
-) {
-
+function metricTrend(history) {
     if (
         !history ||
         history.length < 2
     ) {
-
         return {
             trend: "up",
             change: "0%"
         };
-
     }
 
     const previous =
@@ -68,38 +64,98 @@ function metricTrend(
         current - previous;
 
     return {
-
         trend:
             difference >= 0
                 ? "up"
                 : "down",
 
         change:
-            `${difference >= 0 ? "+" : ""}${difference.toFixed(1)}%`
-
+            `${difference >= 0 ? "+" : ""}` +
+            `${difference.toFixed(1)}%`
     };
+}
 
+function InfrastructureState({
+    loading,
+    error,
+    hostCount
+}) {
+    if (loading) {
+        return (
+            <section className="rounded-3xl border border-slate-800 bg-[#111827] px-6 py-16 text-center">
+                <LoaderCircle
+                    size={38}
+                    className="mx-auto animate-spin text-cyan-400"
+                />
+
+                <h2 className="mt-5 text-xl font-bold text-white">
+                    Loading your infrastructure
+                </h2>
+            </section>
+        );
+    }
+
+    if (error) {
+        return (
+            <section className="rounded-3xl border border-red-500/20 bg-red-500/5 px-6 py-16 text-center">
+                <AlertTriangle
+                    size={40}
+                    className="mx-auto text-red-400"
+                />
+
+                <h2 className="mt-5 text-xl font-bold text-white">
+                    Infrastructure unavailable
+                </h2>
+
+                <p className="mx-auto mt-3 max-w-xl text-slate-400">
+                    {error}
+                </p>
+            </section>
+        );
+    }
+
+    const hasRegisteredHosts =
+        hostCount > 0;
+
+    return (
+        <section className="rounded-3xl border border-dashed border-slate-700 bg-[#111827] px-6 py-16 text-center">
+            <WifiOff
+                size={44}
+                className="mx-auto text-amber-400"
+            />
+
+            <h2 className="mt-5 text-2xl font-bold text-white">
+                {hasRegisteredHosts
+                    ? "No hosts currently reporting"
+                    : "No monitored hosts yet"}
+            </h2>
+
+            <p className="mx-auto mt-3 max-w-2xl leading-7 text-slate-400">
+                {hasRegisteredHosts
+                    ? "This account has registered hosts, but none are currently online. Start the monitoring agent to resume genuine host metrics."
+                    : "This account has no connected monitoring hosts. Connect a host before CPU, memory, storage and uptime information can appear."}
+            </p>
+
+            <Link
+                to="/infrastructure"
+                className="mt-7 inline-flex rounded-xl bg-cyan-500 px-5 py-3 font-bold text-slate-950 transition hover:bg-cyan-400"
+            >
+                Open Infrastructure
+            </Link>
+        </section>
+    );
 }
 
 export default function Dashboard() {
-
     const {
-
         metrics,
-
         history,
-
         connected,
-
-        loading
-
+        loading,
+        error,
+        hostCount,
+        activeHostCount
     } = useSystemMetrics();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Current Values
-    |--------------------------------------------------------------------------
-    */
 
     const cpuUsage =
         Number(
@@ -116,12 +172,6 @@ export default function Dashboard() {
             metrics?.disk?.usage || 0
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Trends
-    |--------------------------------------------------------------------------
-    */
-
     const cpuTrend =
         metricTrend(
             history.cpu
@@ -137,225 +187,146 @@ export default function Dashboard() {
             history.disk
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Display Values
-    |--------------------------------------------------------------------------
-    */
-
-    const cpuValue =
-        loading
-            ? "0%"
-            : `${cpuUsage.toFixed(1)}%`;
-
-    const memoryValue =
-        loading
-            ? "0%"
-            : `${memoryUsage.toFixed(1)}%`;
-
-    const diskValue =
-        loading
-            ? "0%"
-            : `${diskUsage.toFixed(1)}%`;
+    const showInfrastructure =
+        !loading &&
+        !error &&
+        connected &&
+        Boolean(metrics);
 
     return (
-
         <DashboardLayout>
-
             <DashboardHeader />
 
-            {/* KPI Cards */}
+            {!showInfrastructure ? (
+                <InfrastructureState
+                    loading={loading}
+                    error={error}
+                    hostCount={hostCount}
+                />
+            ) : (
+                <>
+                    <section className="grid grid-cols-12 items-stretch gap-8">
+                        <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                            <StatCard
+                                title="CPU Usage"
+                                value={`${cpuUsage.toFixed(1)}%`}
+                                subtitle="Account-owned active hosts"
+                                icon={Cpu}
+                                color="blue"
+                                progress={cpuUsage}
+                                status={
+                                    metricStatus(
+                                        cpuUsage
+                                    )
+                                }
+                                change={cpuTrend.change}
+                                trend={cpuTrend.trend}
+                                sparklineData={
+                                    history.cpu.length
+                                        ? history.cpu
+                                        : [cpuUsage]
+                                }
+                            />
+                        </div>
 
-            <section className="grid grid-cols-12 items-stretch gap-8">
+                        <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                            <StatCard
+                                title="Memory"
+                                value={`${memoryUsage.toFixed(1)}%`}
+                                subtitle="Account-owned active hosts"
+                                icon={MemoryStick}
+                                color="emerald"
+                                progress={memoryUsage}
+                                status={
+                                    metricStatus(
+                                        memoryUsage
+                                    )
+                                }
+                                change={memoryTrend.change}
+                                trend={memoryTrend.trend}
+                                sparklineData={
+                                    history.memory.length
+                                        ? history.memory
+                                        : [memoryUsage]
+                                }
+                            />
+                        </div>
 
-                <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                        <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                            <StatCard
+                                title="Storage"
+                                value={`${diskUsage.toFixed(1)}%`}
+                                subtitle="Account-owned active hosts"
+                                icon={HardDrive}
+                                color="purple"
+                                progress={diskUsage}
+                                status={
+                                    metricStatus(
+                                        diskUsage
+                                    )
+                                }
+                                change={diskTrend.change}
+                                trend={diskTrend.trend}
+                                sparklineData={
+                                    history.disk.length
+                                        ? history.disk
+                                        : [diskUsage]
+                                }
+                            />
+                        </div>
 
-                    <StatCard
-                        title="CPU Usage"
-                        value={cpuValue}
-                        subtitle="Live processor utilization"
-                        icon={Cpu}
-                        color="blue"
-                        progress={cpuUsage}
-                        status={
-                            metricStatus(
-                                cpuUsage
-                            )
-                        }
-                        change={
-                            cpuTrend.change
-                        }
-                        trend={
-                            cpuTrend.trend
-                        }
-                        sparklineData={
-                            history.cpu.length
-                                ? history.cpu
-                                : [0]
-                        }
-                    />
+                        <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                            <StatCard
+                                title="Active Hosts"
+                                value={String(
+                                    activeHostCount
+                                )}
+                                subtitle={`${activeHostCount} of ${hostCount} registered hosts reporting`}
+                                icon={Server}
+                                color="cyan"
+                                progress={
+                                    hostCount > 0
+                                        ? (
+                                            activeHostCount /
+                                            hostCount
+                                        ) * 100
+                                        : 0
+                                }
+                                status="online"
+                                change="Live"
+                                trend="up"
+                                sparklineData={[
+                                    activeHostCount,
+                                    activeHostCount
+                                ]}
+                            />
+                        </div>
+                    </section>
 
-                </div>
+                    <div className="h-12" />
 
-                <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
+                    <section className="grid grid-cols-12 gap-8">
+                        <div className="col-span-12 rounded-3xl border border-slate-800 bg-[#111827] p-8 xl:col-span-8">
+                            <h2 className="text-2xl font-bold text-white">
+                                Account-scoped host metrics
+                            </h2>
 
-                    <StatCard
-                        title="Memory"
-                        value={memoryValue}
-                        subtitle="Live RAM consumption"
-                        icon={MemoryStick}
-                        color="emerald"
-                        progress={memoryUsage}
-                        status={
-                            metricStatus(
-                                memoryUsage
-                            )
-                        }
-                        change={
-                            memoryTrend.change
-                        }
-                        trend={
-                            memoryTrend.trend
-                        }
-                        sparklineData={
-                            history.memory.length
-                                ? history.memory
-                                : [0]
-                        }
-                    />
+                            <p className="mt-3 max-w-3xl leading-7 text-slate-400">
+                                These current values come
+                                only from active hosts owned
+                                by this account. Historical
+                                charts are temporarily hidden
+                                until metric history is linked
+                                securely to host ownership.
+                            </p>
+                        </div>
 
-                </div>
-
-                <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
-
-                    <StatCard
-                        title="Storage"
-                        value={diskValue}
-                        subtitle="Live disk utilization"
-                        icon={HardDrive}
-                        color="purple"
-                        progress={diskUsage}
-                        status={
-                            metricStatus(
-                                diskUsage
-                            )
-                        }
-                        change={
-                            diskTrend.change
-                        }
-                        trend={
-                            diskTrend.trend
-                        }
-                        sparklineData={
-                            history.disk.length
-                                ? history.disk
-                                : [0]
-                        }
-                    />
-
-                </div>
-
-                <div className="col-span-12 h-full md:col-span-6 xl:col-span-3">
-
-                    <StatCard
-                        title="Active Hosts"
-                        value={
-                            metrics ? "1" : "0"
-                        }
-                        subtitle={
-                            connected
-                                ? `${metrics?.hostname || "Local host"} connected`
-                                : "Waiting for monitoring connection"
-                        }
-                        icon={Server}
-                        color="cyan"
-                        progress={
-                            connected
-                                ? 100
-                                : 0
-                        }
-                        status={
-                            connected
-                                ? "online"
-                                : "offline"
-                        }
-                        change={
-                            connected
-                                ? "Live"
-                                : "Offline"
-                        }
-                        trend={
-                            connected
-                                ? "up"
-                                : "down"
-                        }
-                        sparklineData={
-                            connected
-                                ? [100, 100]
-                                : [0, 0]
-                        }
-                    />
-
-                </div>
-
-            </section>
-
-            {/* Large visible gap */}
-
-            <div className="h-12"></div>
-
-            {/* Analytics */}
-
-            <section className="grid grid-cols-12 items-stretch gap-8">
-
-                <div className="col-span-12 h-full xl:col-span-8">
-
-                    <PerformanceChart
-                        metrics={metrics}
-                        history={history}
-                        connected={connected}
-                    />
-
-                </div>
-
-                <div className="col-span-12 h-full xl:col-span-4">
-
-                    <AlertsPanel />
-
-                </div>
-
-            </section>
-
-            {/* Large visible gap */}
-
-            <div className="h-12"></div>
-
-            {/* Infrastructure */}
-
-            <section className="grid auto-rows-fr grid-cols-12 items-stretch gap-8">
-
-                <div className="col-span-12 h-full lg:col-span-4">
-
-                    <RunningServices />
-
-                </div>
-
-                <div className="col-span-12 h-full lg:col-span-4">
-
-                    <SystemInformation />
-
-                </div>
-
-                <div className="col-span-12 h-full lg:col-span-4">
-
-                    <RecentActivity />
-
-                </div>
-
-            </section>
-
+                        <div className="col-span-12 xl:col-span-4">
+                            <AlertsPanel />
+                        </div>
+                    </section>
+                </>
+            )}
         </DashboardLayout>
-
     );
-
 }
