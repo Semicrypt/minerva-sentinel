@@ -11,6 +11,7 @@ import AWSHeader from "../components/aws/AWSHeader";
 import AWSConnectionForm from "../components/aws/AWSConnectionForm";
 import AWSConnectionsList from "../components/aws/AWSConnectionsList";
 import AWSSetupGuide from "../components/aws/AWSSetupGuide";
+import AWSEC2InventoryPanel from "../components/aws/AWSEC2InventoryPanel";
 
 import {
     createAwsConnection,
@@ -722,22 +723,38 @@ export default function AWSResources() {
                                 </div>
 
                                 {
-                                    selectedConnection && (
-                                        <AWSSetupGuide
-                                            setup={setup}
-                                            connection={
-                                                selectedConnection
-                                            }
-                                            onVerify={
-                                                handleVerify
-                                            }
-                                            isVerifying={
-                                                selectedIsVerifying
-                                            }
-                                            verifyError={
-                                                verifyError
-                                            }
-                                        />
+                                    selectedConnection &&
+                                    (
+                                        normalizeStatus(
+                                            selectedConnection
+                                        ) === "CONNECTED"
+                                            ? (
+                                                <AWSEC2InventoryPanel
+                                                    key={
+                                                        selectedConnection.id
+                                                    }
+                                                    connection={
+                                                        selectedConnection
+                                                    }
+                                                />
+                                            )
+                                            : (
+                                                <AWSSetupGuide
+                                                    setup={setup}
+                                                    connection={
+                                                        selectedConnection
+                                                    }
+                                                    onVerify={
+                                                        handleVerify
+                                                    }
+                                                    isVerifying={
+                                                        selectedIsVerifying
+                                                    }
+                                                    verifyError={
+                                                        verifyError
+                                                    }
+                                                />
+                                            )
                                     )
                                 }
                             </>

@@ -84,3 +84,19 @@ export async function deleteAwsConnection(
 
     return response.data;
 }
+/*
+|---------------------------------------------------------------------------
+| Account-Scoped EC2 Inventory
+|---------------------------------------------------------------------------
+*/
+
+export async function getAwsEc2Inventory(
+    connectionId
+) {
+    const response =
+        await api.get(
+            `/aws/connections/${connectionId}/resources/ec2`
+        );
+
+    return response.data?.data || null;
+}
