@@ -6,6 +6,11 @@ const auth =
         "../middleware/auth.middleware"
     );
 
+const setupController =
+    require(
+        "../controllers/aws-setup.controller"
+    );
+
 const connectionController =
     require(
         "../controllers/aws-connection.controller"
@@ -16,11 +21,28 @@ const router =
 
 /*
 |---------------------------------------------------------------------------
-| Authenticated AWS Connection Routes
+| Authenticated AWS Routes
 |---------------------------------------------------------------------------
 */
 
 router.use(auth);
+
+/*
+|---------------------------------------------------------------------------
+| AWS Onboarding Configuration
+|---------------------------------------------------------------------------
+*/
+
+router.get(
+    "/setup",
+    setupController.getSetup
+);
+
+/*
+|---------------------------------------------------------------------------
+| AWS Connections
+|---------------------------------------------------------------------------
+*/
 
 router.get(
     "/connections",
