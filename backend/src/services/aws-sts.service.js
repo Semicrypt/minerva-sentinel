@@ -51,8 +51,11 @@ function validateRoleArn(roleArn) {
     }
 
     return {
-        roleArn: normalizedRoleArn,
-        accountId: match[1]
+        roleArn:
+            normalizedRoleArn,
+
+        accountId:
+            match[1]
     };
 }
 
@@ -136,13 +139,36 @@ function getTemporaryCredentials(
     };
 }
 
-async function verifyRoleConnection({
-    userId,
-    connectionId,
-    roleArn,
-    region,
-    externalId
-}) {
+/*
+|---------------------------------------------------------------------------
+| Run Backend Operation With an Assumed AWS Role
+|---------------------------------------------------------------------------
+|
+| Temporary AWS credentials are created by STS and supplied only to the
+| provided backend callback. They must never be returned through an API
+| response, written to logs or persisted in the database.
+|
+| The source STS client is always destroyed after the callback finishes,
+| including when the callback throws an error.
+|---------------------------------------------------------------------------
+*/
+
+async function withAssumedRoleCredentials(
+    {
+        userId,
+        connectionId,
+        roleArn,
+        region,
+        externalId
+    },
+    operation
+) {
+    if (typeof operation !== "function") {
+        throw new TypeError(
+            "AWS assumed-role operation must be a function."
+        );
+    }
+
     const verifiedUserId =
         getPositiveInteger(
             userId,
@@ -156,10 +182,14 @@ async function verifyRoleConnection({
         );
 
     const role =
-        validateRoleArn(roleArn);
+        validateRoleArn(
+            roleArn
+        );
 
     const verifiedRegion =
-        validateRegion(region);
+        validateRegion(
+            region
+        );
 
     const verifiedExternalId =
         validateExternalId(
@@ -168,10 +198,9 @@ async function verifyRoleConnection({
 
     const sourceClient =
         new STSClient({
-            region: verifiedRegion
+            region:
+                verifiedRegion
         });
-
-    let assumedRoleClient = null;
 
     try {
         const assumeRoleResponse =
@@ -189,7 +218,8 @@ async function verifyRoleConnection({
                     ExternalId:
                         verifiedExternalId,
 
-                    DurationSeconds: 900
+                    DurationSeconds:
+                        900
                 })
             );
 
@@ -198,70 +228,118 @@ async function verifyRoleConnection({
                 assumeRoleResponse
             );
 
-        assumedRoleClient =
-            new STSClient({
-                region:
-                    verifiedRegion,
+        return await operation({
+            accountId:
+                role.accountId,
 
-                credentials:
-                    temporaryCredentials
-            });
+            region:
+                verifiedRegion,
 
-        const identity =
-            await assumedRoleClient.send(
-                new GetCallerIdentityCommand({})
-            );
-
-        const accountId =
-            String(
-                identity?.Account || ""
-            ).trim();
-
-        const principalArn =
-            String(
-                identity?.Arn || ""
-            ).trim();
-
-        if (
-            !/^[0-9]{12}$/.test(
-                accountId
-            )
-        ) {
-            throw new Error(
-                "AWS STS returned an invalid account ID."
-            );
-        }
-
-        if (
-            accountId !==
-            role.accountId
-        ) {
-            throw new Error(
-                "The assumed AWS account does not match the IAM role ARN."
-            );
-        }
-
-        if (!principalArn) {
-            throw new Error(
-                "AWS STS did not return the assumed role ARN."
-            );
-        }
-
-        return {
-            accountId,
-            principalArn,
-            principalId:
-                identity?.UserId || null
-        };
+            credentials:
+                temporaryCredentials
+        });
     } finally {
-        if (assumedRoleClient) {
-            assumedRoleClient.destroy();
-        }
-
         sourceClient.destroy();
     }
 }
 
+/*
+|---------------------------------------------------------------------------
+| Verify AWS Role Connection
+|---------------------------------------------------------------------------
+*/
+
+async function verifyRoleConnection({
+    userId,
+    connectionId,
+    roleArn,
+    region,
+    externalId
+}) {
+    return withAssumedRoleCredentials(
+        {
+            userId,
+            connectionId,
+            roleArn,
+            region,
+            externalId
+        },
+
+        async ({
+            accountId:
+                expectedAccountId,
+
+            region:
+                verifiedRegion,
+
+            credentials
+        }) => {
+            const assumedRoleClient =
+                new STSClient({
+                    region:
+                        verifiedRegion,
+
+                    credentials
+                });
+
+            try {
+                const identity =
+                    await assumedRoleClient.send(
+                        new GetCallerIdentityCommand({})
+                    );
+
+                const accountId =
+                    String(
+                        identity?.Account || ""
+                    ).trim();
+
+                const principalArn =
+                    String(
+                        identity?.Arn || ""
+                    ).trim();
+
+                if (
+                    !/^[0-9]{12}$/.test(
+                        accountId
+                    )
+                ) {
+                    throw new Error(
+                        "AWS STS returned an invalid account ID."
+                    );
+                }
+
+                if (
+                    accountId !==
+                    expectedAccountId
+                ) {
+                    throw new Error(
+                        "The assumed AWS account does not match the IAM role ARN."
+                    );
+                }
+
+                if (!principalArn) {
+                    throw new Error(
+                        "AWS STS did not return the assumed role ARN."
+                    );
+                }
+
+                return {
+                    accountId,
+
+                    principalArn,
+
+                    principalId:
+                        identity?.UserId ||
+                        null
+                };
+            } finally {
+                assumedRoleClient.destroy();
+            }
+        }
+    );
+}
+
 module.exports = {
+    withAssumedRoleCredentials,
     verifyRoleConnection
 };

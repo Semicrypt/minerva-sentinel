@@ -16,6 +16,11 @@ const connectionController =
         "../controllers/aws-connection.controller"
     );
 
+const resourceController =
+    require(
+        "../controllers/aws-resource.controller"
+    );
+
 const router =
     express.Router();
 
@@ -67,6 +72,17 @@ router.patch(
 router.delete(
     "/connections/:id",
     connectionController.deleteConnection
+);
+
+/*
+|---------------------------------------------------------------------------
+| Account-Scoped AWS Resources
+|---------------------------------------------------------------------------
+*/
+
+router.get(
+    "/connections/:id/resources/ec2",
+    resourceController.getEc2Inventory
 );
 
 module.exports =
