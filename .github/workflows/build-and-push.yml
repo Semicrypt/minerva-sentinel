@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - frontend-polish
     paths:
       - "backend/**"
       - "frontend-v2/**"
@@ -22,7 +23,7 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and push images to ECR
+    name: Build and push branch-safe images to ECR
     runs-on: ubuntu-latest
 
     steps:
@@ -39,6 +40,19 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Generate backend image metadata
+        id: backend_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}
+          flavor: |
+            latest=false
+          tags: |
+            type=ref,event=branch
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+
       - name: Build and push backend image
         uses: docker/build-push-action@v7
         with:
@@ -46,9 +60,21 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
+          tags: ${{ steps.backend_meta.outputs.tags }}
+          labels: ${{ steps.backend_meta.outputs.labels }}
+
+      - name: Generate frontend image metadata
+        id: frontend_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}
+          flavor: |
+            latest=false
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
+            type=ref,event=branch
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v7
@@ -57,9 +83,8 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+          tags: ${{ steps.frontend_meta.outputs.tags }}
+          labels: ${{ steps.frontend_meta.outputs.labels }}
 
   deploy-to-ec2:
     name: Deploy containers to EC2 through SSM
@@ -116,22 +141,35 @@ jobs:
                 --output json 2>/dev/null || true
             )"
 
-            status="$(printf '%s' "$result" | jq -r '.Status // empty')"
+            status="$(
+              printf '%s' "$result" |
+              jq -r '.Status // empty'
+            )"
 
             echo "Deployment status: ${status:-waiting} (${attempt}/60)"
 
             case "$status" in
               Success)
                 echo "Deployment succeeded."
-                printf '%s' "$result" | jq -r '.StandardOutputContent // empty'
-                printf '%s' "$result" | jq -r '.StandardErrorContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardOutputContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardErrorContent // empty'
+
                 exit 0
                 ;;
 
               Failed|Cancelled|TimedOut|Cancelling|Undeliverable|Terminated)
                 echo "Deployment failed."
-                printf '%s' "$result" | jq -r '.StandardOutputContent // empty'
-                printf '%s' "$result" | jq -r '.StandardErrorContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardOutputContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardErrorContent // empty'
+
                 exit 1
                 ;;
 
