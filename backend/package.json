@@ -11,6 +11,7 @@
   "author": "Ifeanyi Divine",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-sts": "^3.1110.0",
     "axios": "^1.19.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
