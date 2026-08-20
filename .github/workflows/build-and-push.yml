@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - frontend-polish
     paths:
       - "backend/**"
       - "frontend-v2/**"
@@ -22,7 +23,7 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and push images to ECR
+    name: Build and push branch-safe images to ECR
     runs-on: ubuntu-latest
 
     steps:
@@ -39,6 +40,19 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Generate backend image metadata
+        id: backend_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}
+          flavor: |
+            latest=false
+          tags: |
+            type=ref,event=branch
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+
       - name: Build and push backend image
         uses: docker/build-push-action@v7
         with:
@@ -46,9 +60,21 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
+          tags: ${{ steps.backend_meta.outputs.tags }}
+          labels: ${{ steps.backend_meta.outputs.labels }}
+
+      - name: Generate frontend image metadata
+        id: frontend_meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}
+          flavor: |
+            latest=false
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_REPOSITORY }}:${{ github.sha }}
+            type=ref,event=branch
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v7
@@ -57,14 +83,15 @@ jobs:
           push: true
           platforms: linux/amd64
           provenance: false
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_REPOSITORY }}:${{ github.sha }}
+          tags: ${{ steps.frontend_meta.outputs.tags }}
+          labels: ${{ steps.frontend_meta.outputs.labels }}
 
   deploy-to-ec2:
     name: Deploy containers to EC2 through SSM
     needs: build-and-push
-    if: github.ref == 'refs/heads/master'
+    if: |
+      github.ref == 'refs/heads/master' ||
+      github.ref == 'refs/heads/frontend-polish'
     runs-on: ubuntu-latest
 
     env:
@@ -96,6 +123,9 @@ jobs:
               --parameters 'commands=[
                 "set -e",
                 "cd /home/ubuntu/minerva-sentinel",
+                "export IMAGE_TAG=${{ github.ref == 'refs/heads/master' && 'latest' || 'frontend-polish' }}",
+                "echo Deploying image tag: $IMAGE_TAG",
+                "docker compose --env-file .env -f docker-compose.production.yml config --quiet",
                 "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 878451097402.dkr.ecr.eu-north-1.amazonaws.com",
                 "docker compose --env-file .env -f docker-compose.production.yml pull backend frontend",
                 "docker compose --env-file .env -f docker-compose.production.yml up -d --remove-orphans backend frontend",
@@ -116,22 +146,35 @@ jobs:
                 --output json 2>/dev/null || true
             )"
 
-            status="$(printf '%s' "$result" | jq -r '.Status // empty')"
+            status="$(
+              printf '%s' "$result" |
+              jq -r '.Status // empty'
+            )"
 
             echo "Deployment status: ${status:-waiting} (${attempt}/60)"
 
             case "$status" in
               Success)
                 echo "Deployment succeeded."
-                printf '%s' "$result" | jq -r '.StandardOutputContent // empty'
-                printf '%s' "$result" | jq -r '.StandardErrorContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardOutputContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardErrorContent // empty'
+
                 exit 0
                 ;;
 
               Failed|Cancelled|TimedOut|Cancelling|Undeliverable|Terminated)
                 echo "Deployment failed."
-                printf '%s' "$result" | jq -r '.StandardOutputContent // empty'
-                printf '%s' "$result" | jq -r '.StandardErrorContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardOutputContent // empty'
+
+                printf '%s' "$result" |
+                  jq -r '.StandardErrorContent // empty'
+
                 exit 1
                 ;;
 
@@ -143,3 +186,48 @@ jobs:
 
           echo "Deployment timed out."
           exit 1
+
+  deploy-static-site:
+    name: Deploy frontend to S3 and CloudFront
+    needs: build-and-push
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+
+    env:
+      FRONTEND_BUCKET: minervasentinel-com-frontend-prod-878451097402-eu-north-1-an
+      CLOUDFRONT_DISTRIBUTION_ID: EKJZTQ1M91GTO
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v7
+
+      - name: Authenticate to AWS with GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend-v2/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend-v2
+
+      - name: Build frontend
+        run: npm run build --prefix frontend-v2
+
+      - name: Upload frontend to S3
+        run: |
+          aws s3 sync frontend-v2/dist/ \
+            "s3://${FRONTEND_BUCKET}/" \
+            --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"

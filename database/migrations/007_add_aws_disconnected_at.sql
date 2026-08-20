@@ -1,0 +1,8 @@
+BEGIN;
+
+ALTER TABLE aws_connections
+ADD COLUMN IF NOT EXISTS
+    disconnected_at
+    TIMESTAMP WITHOUT TIME ZONE;
+
+COMMIT;

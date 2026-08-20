@@ -31,6 +31,9 @@ const hostRoutes =
 const dockerRoutes =
     require("./routes/docker.routes");
 
+const awsRoutes =
+    require("./routes/aws.routes");
+
 const logRoutes =
     require("./routes/log.routes");
 
@@ -136,6 +139,11 @@ app.use(
 app.use(
     "/api/docker",
     dockerRoutes
+);
+
+app.use(
+    "/api/aws",
+    awsRoutes
 );
 
 app.use(
