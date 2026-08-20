@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Minerva Sentinel</title>
+  <desc id="desc">Cloud infrastructure monitoring with live metrics and intelligent alerts.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#050816"/>
+      <stop offset="55%" stop-color="#0b1630"/>
+      <stop offset="100%" stop-color="#172b68"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1769ff"/>
+      <stop offset="55%" stop-color="#08b9e8"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0V44" fill="none" stroke="#8aa4d8" stroke-opacity=".1"/>
+    </pattern>
+
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="32"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <circle cx="1040" cy="90" r="150" fill="#1769ff" fill-opacity=".28" filter="url(#glow)"/>
+  <circle cx="180" cy="570" r="170" fill="#8b5cf6" fill-opacity=".2" filter="url(#glow)"/>
+
+  <rect x="56" y="48" width="1088" height="534" rx="36"
+        fill="#0c1428" fill-opacity=".82"
+        stroke="#91a8d8" stroke-opacity=".22"/>
+
+  <rect x="104" y="96" width="88" height="88" rx="24" fill="url(#accent)"/>
+
+  <path d="M148 118l30-12 30 12v28c0 27-15 48-30 58-15-10-30-31-30-58z"
+        fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m161 145 12 12 23-25"
+        fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="220" y="139"
+        fill="#ffffff"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="46"
+        font-weight="700">Minerva</text>
+
+  <text x="224" y="174"
+        fill="#37d5ed"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="17"
+        font-weight="700"
+        letter-spacing="8">SENTINEL</text>
+
+  <text x="104" y="320"
+        fill="#ffffff"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="70"
+        font-weight="700">Monitor your</text>
+
+  <text x="104" y="400"
+        fill="#ffffff"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="70"
+        font-weight="700">infrastructure.</text>
+
+  <text x="104" y="468"
+        fill="url(#accent)"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="70"
+        font-weight="700">Instantly.</text>
+
+  <text x="104" y="522"
+        fill="#a9b9d7"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="24">Live metrics · intelligent alerts · clear analytics</text>
+
+  <rect x="900" y="500" width="190" height="46" rx="23"
+        fill="#ffffff" fill-opacity=".08"
+        stroke="#ffffff" stroke-opacity=".18"/>
+
+  <text x="995" y="530"
+        text-anchor="middle"
+        fill="#dce7ff"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="18"
+        font-weight="600">minervasentinel.com</text>
+</svg>
