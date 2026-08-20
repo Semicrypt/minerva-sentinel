@@ -15,7 +15,10 @@ export default function TrustedSection() {
 
     return (
 
-        <section className="px-6 py-28">
+        <section
+    id="technical-solutions"
+    className="scroll-mt-32 px-6 py-28"
+>
 
             <div className="mx-auto max-w-7xl">
 
